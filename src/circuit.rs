@@ -15,14 +15,6 @@ use crate::element::vdepsrc::{Vccs, Vcvs};
 use crate::element::vpwl::VoltageSourcePwl;
 use crate::element::vsine::VoltageSourceSine;
 
-/// Program execution trace macro - prefix `<circuit>`
-macro_rules! trace {
-    ($fmt:expr $(, $($arg:tt)*)?) => {
-        // uncomment the line below for tracing prints
-        //println!(concat!("<circuit> ", $fmt), $($($arg)*)?);
-    };
-}
-
 /// Physical Constant: Boltzman
 pub const BOLTZMANN: f64 = 1.380_648_8e-23;
 

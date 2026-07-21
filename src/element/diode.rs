@@ -5,14 +5,6 @@ use std::fmt;
 
 use crate::circuit::{BOLTZMANN, CHARGE, GMIN, NodeId};
 
-/// Program exectution trace macro - prefix `<diode>`
-macro_rules! trace {
-    ($fmt:expr $(, $($arg:tt)*)?) => {
-        // uncomment the line below for tracing prints
-        //println!(concat!("<diode> ", $fmt), $($($arg)*)?);
-    };
-}
-
 #[derive(Clone)]
 pub struct Diode {
     pub ident: String,

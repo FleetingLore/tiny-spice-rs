@@ -7,14 +7,6 @@ use crate::circuit;
 use crate::element;
 use crate::wavewriter::WaveWriter;
 
-/// Program execution trace macro - prefix `<engine>`
-macro_rules! trace {
-    ($fmt:expr $(, $($arg:tt)*)?) => {
-        // uncomment the line below for tracing prints
-        //println!(concat!("<engine> ", $fmt), $($($arg)*)?);
-    };
-}
-
 fn banner() {
     println!("**********************************************");
     println!("***          Tiny-SPICE-Simulator          ***");

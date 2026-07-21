@@ -44,14 +44,6 @@ use crate::element::{Capacitor, Diode, Element, Resistor, Vccs, Vcvs};
 use crate::bracket_expression::Expression;
 use crate::parameter::Parameter;
 
-/// Program execution trace macro - prefix `<expand>`
-macro_rules! trace {
-    ($fmt:expr $(, $($arg:tt)*)?) => {
-        // uncomment the line below for tracing prints
-        //println!(concat!("<expand> ", $fmt), $($($arg)*)?);
-    };
-}
-
 /// Expand subcircuits.
 ///
 /// This takes a list of subcircuits and returns a single `Circuit`

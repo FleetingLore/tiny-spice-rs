@@ -41,14 +41,6 @@ use crate::parameter::Parameter;
 use crate::analysis::{Configuration, Kind};
 use crate::expander;
 
-/// Program execution trace macro - prefix `<spice>`
-macro_rules! trace {
-    ($fmt:expr $(, $($arg:tt)*)?) => {
-        // uncomment the line below for tracing prints
-        //println!(concat!("<spice> ", $fmt), $($($arg)*)?);
-    };
-}
-
 /// Set the SPICE deck read mode
 #[allow(dead_code)]
 enum ReadMode {

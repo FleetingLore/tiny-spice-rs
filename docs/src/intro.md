@@ -35,6 +35,13 @@
 ## 快速开始
 
 ```bash
-cargo build --release
+# 编译并运行示例
+make release
 ./target/release/tiny-spice-rs ngspice/test_vvrrr.spi
+
+# 运行全部测试
+make test
+
+# 构建文档
+make docs
 ```

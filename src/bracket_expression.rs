@@ -4,14 +4,6 @@
 
 use std::fmt;
 
-/// Program execution trace macro - prefix `<bktexpr>`
-macro_rules! trace {
-    ($fmt:expr $(, $($arg:tt)*)?) => {
-        // uncomment the line below for tracing prints
-        //println!(concat!("<bktexpr> ", $fmt), $($($arg)*)?);
-    };
-}
-
 /// Expression
 #[derive(Clone, Debug)]
 pub enum Expression {
