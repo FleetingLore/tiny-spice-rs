@@ -145,7 +145,15 @@ checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 name = "spice_cli"
 version = "0.1.0"
 dependencies = [
+ "spice_parser",
  "spice_tui",
+ "tiny_spice",
+]
+
+[[package]]
+name = "spice_parser"
+version = "0.1.0"
+dependencies = [
  "tiny_spice",
 ]
 
@@ -171,6 +179,9 @@ dependencies = [
 [[package]]
 name = "tiny_spice"
 version = "0.10.0"
+dependencies = [
+ "spice_parser",
+]
 
 [[package]]
 name = "unicode-ident"
