@@ -36,5 +36,5 @@
 
 ```bash
 cargo build --release
-./target/release/tiny-spice-rs examples/rc_filter.spi
+./target/release/tiny-spice-rs ngspice/test_vvrrr.spi
 ```
