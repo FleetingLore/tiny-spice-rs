@@ -15,3 +15,4 @@ docs/book
 
 # rust
 target/
+Cargo.lock
