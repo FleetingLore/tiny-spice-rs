@@ -11,7 +11,7 @@ mod common;
 #[allow(non_snake_case)]
 fn test_irrc_trans_1kHz() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 1e-6, 0.0);
     cfg.set_wavefile("waves/trans_irrc_1kHz.dat");
@@ -27,7 +27,7 @@ fn test_irrc_trans_1kHz() {
 #[allow(non_snake_case)]
 fn test_irrc_trans_2kHz() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 1e-6, 0.0);
     cfg.set_wavefile("waves/trans_irrc_2kHz.dat");
@@ -43,7 +43,7 @@ fn test_irrc_trans_2kHz() {
 #[allow(non_snake_case)]
 fn test_irrc_trans_5kHz() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 1e-6, 0.0);
     cfg.set_wavefile("waves/trans_irrc_5kHz.dat");
@@ -59,7 +59,7 @@ fn test_irrc_trans_5kHz() {
 #[allow(non_snake_case)]
 fn test_irrc_trans_10kHz() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 1e-6, 0.0);
     cfg.set_wavefile("waves/trans_irrc_10kHz.dat");
@@ -83,7 +83,7 @@ fn test_irrc_trans_lpf_loop() {
     for timestep in timesteps.iter() {
         for freq in freqs.iter() {
             let mut eng = engine::Engine::new();
-            let mut cfg = analysis::Configuration::new();
+            let mut cfg = analysis::Configuration::default();
             cfg.set_transient(2.0e-3, *timestep, 0.0);
 
             let ckt = build(*freq);

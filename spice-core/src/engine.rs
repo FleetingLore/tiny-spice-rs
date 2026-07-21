@@ -84,6 +84,7 @@ impl Engine {
         ckt: &circuit::Circuit,
         cfg: &analysis::Configuration,
     ) -> Option<analysis::Statistics> {
+        self.reporter.info(&cfg.summary());
         if let Some(ref a) = cfg.kind {
             match *a {
                 analysis::Kind::DcOperatingPoint => Some(self.dc_operating_point(ckt, cfg)),

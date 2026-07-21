@@ -1,39 +1,49 @@
 .PHONY: build release test lint check docs serve fmt clean
 
-# Build (debug)
+# ── Build ──────────────────────────────────────────
+
 build:
 	cargo build
 
-# Build (release)
 release:
 	cargo build --release
 
-# Run all tests
-test:
-	cargo test
+# ── Test ───────────────────────────────────────────
 
-# Clippy strict lint
+test:
+	cargo test --all
+
+test-core:
+	cargo test -p tiny_spice
+
+test-parser:
+	cargo test -p spice_parser
+
+test-cli:
+	cargo test -p spice_cli
+
+# ── Lint ───────────────────────────────────────────
+
 lint:
 	cargo clippy --all-targets -- -D warnings
 
-# Check formatting + lint (CI)
 check:
 	cargo fmt --all --check
 	cargo clippy --all-targets -- -D warnings
 
-# Auto-format
 fmt:
 	cargo fmt --all
 
-# Build mdBook
+# ── Docs ───────────────────────────────────────────
+
 docs:
 	mdbook build docs
 
-# Serve mdBook locally at http://localhost:3000
 serve:
 	mdbook serve docs --open
 
-# Clean build artifacts
+# ── Clean ──────────────────────────────────────────
+
 clean:
 	cargo clean
 	rm -rf docs/book

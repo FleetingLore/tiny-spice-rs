@@ -10,7 +10,7 @@ mod common;
 #[test]
 fn trans_ir() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 10e-6, 0.0);
     cfg.set_wavefile("waves/trans_ir.dat");

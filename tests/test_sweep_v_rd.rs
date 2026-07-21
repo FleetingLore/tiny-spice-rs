@@ -4,7 +4,7 @@ extern crate tiny_spice;
 fn test_sweep_v_rd() {
 
     let mut eng = engine::Engine::new();
-    let cfg = analysis::Configuration::new();
+    let cfg = analysis::Configuration::default();
 
     //cfg.set_transient(2.0e-3, 10e-6, 0.0);
     //cfg.set_wavefile("waves/trans_ird_sine_1kHz_10us.dat");

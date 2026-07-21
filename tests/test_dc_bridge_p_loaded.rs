@@ -11,7 +11,7 @@ use crate::common::assert_nearly;
 #[test]
 fn test_dc_bridge_loaded_2v0() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
     cfg.set_dc_operating_point();
 
     let ckt = build_v();
@@ -26,7 +26,7 @@ fn test_dc_bridge_loaded_2v0() {
 #[test]
 fn test_dc_bridge_loaded_gnd() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
     cfg.set_dc_operating_point();
 
     let ckt = build_vv();

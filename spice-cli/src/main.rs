@@ -3,10 +3,10 @@
 use std::env;
 use std::path::Path;
 
+use spice_parser::Reader;
 use spice_tui::TuiReporter;
 use tiny_spice::engine::Engine;
 use tiny_spice::source::CircuitSource;
-use tiny_spice::spice;
 
 /// Read a spice file, and execute it
 fn main() {
@@ -24,7 +24,7 @@ fn main() {
 
     // Choose circuit source based on file extension
     let mut source: Box<dyn CircuitSource> = match spice_file.extension().and_then(|e| e.to_str()) {
-        Some("spi") | Some("cir") | Some("sp") => Box::new(spice::Reader::new()),
+        Some("spi") | Some("cir") | Some("sp") => Box::new(Reader::new()),
         other => {
             eprintln!(
                 "*FATAL* Unsupported file format: {:?}",

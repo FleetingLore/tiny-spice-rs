@@ -18,8 +18,8 @@ use std::path::Path;
 
 extern crate tiny_spice;
 
+use spice_parser::Reader;
 use tiny_spice::engine;
-use tiny_spice::spice;
 
 mod common;
 
@@ -31,7 +31,7 @@ fn test_library_reading() {
 
     let spice_file = Path::new("./ngspice/drum-machine/libtest.spi");
 
-    let mut reader = spice::Reader::new();
+    let mut reader = Reader::new();
     let errors_exist = reader.read(spice_file);
     if errors_exist {
         panic!("*FATAL* Errors in SPICE Deck so not doing simulations");

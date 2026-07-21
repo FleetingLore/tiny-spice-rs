@@ -9,7 +9,7 @@ use tiny_spice::engine;
 #[allow(non_snake_case)]
 fn test_trans_ir_bridge_rc_1kHz() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 1e-6, 0.0);
     cfg.set_wavefile("waves/trans_ir_bridge_1kHz_rc_load.dat");
@@ -24,7 +24,7 @@ fn test_trans_ir_bridge_rc_1kHz() {
 #[test]
 fn test_trans_ir_bridge_rc_failure_003() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 0.000001, 0.0);
     cfg.set_wavefile("waves/trans_ir_bridge_rc_failure_003.dat");
@@ -58,7 +58,7 @@ fn test_trans_ir_bridge_rc_load_loop() {
             for amp in amps.iter() {
                 for timestep in timesteps.iter() {
                     let mut eng = engine::Engine::new();
-                    let mut cfg = analysis::Configuration::new();
+                    let mut cfg = analysis::Configuration::default();
                     cfg.set_transient(2.0e-3, *timestep, 0.0);
 
                     let specs = format!("{:03} {} {} {} {}", i, timestep, amp, freq, cap);

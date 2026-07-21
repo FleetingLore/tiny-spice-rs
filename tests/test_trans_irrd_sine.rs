@@ -11,7 +11,7 @@ mod common;
 #[allow(non_snake_case)]
 fn test_trans_irrd_sine_1kHz_10us() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 10e-6, 0.0);
     cfg.set_wavefile("waves/trans_irrd_sine_1kHz_10us.dat");
@@ -27,7 +27,7 @@ fn test_trans_irrd_sine_1kHz_10us() {
 #[allow(non_snake_case)]
 fn test_trans_irrd_sine_1kHz_1us() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 1e-6, 0.0);
     cfg.set_wavefile("waves/trans_irdd_sine_1kHz_1us.dat");
@@ -51,7 +51,7 @@ fn test_trans_irrd_sine_loop() {
     for timestep in timesteps.iter() {
         for freq in freqs.iter() {
             let mut eng = engine::Engine::new();
-            let mut cfg = analysis::Configuration::new();
+            let mut cfg = analysis::Configuration::default();
             cfg.set_transient(2.0e-3, *timestep, 0.0);
 
             let ckt = build(*freq);

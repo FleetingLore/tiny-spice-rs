@@ -37,11 +37,12 @@
 
 ```
 spice-tiny-fork/
-├── Cargo.toml              # workspace 根，members = ["spice-core", "spice-tui", "spice-cli"]
-├── spice-core/             # 核心库 crate（零外部依赖）
-├── spice-tui/              # TUI 输出后端 crate（依赖 indicatif）
-├── spice-cli/              # CLI 入口 crate（组装 core + tui）
-├── tests/                  # 集成测试（目标 spice-core）
+├── Cargo.toml              # workspace 根
+├── spice-core/             # 核心库（零外部依赖）—— 纯仿真引擎
+├── spice-parser/           # SPICE 语法解析（依赖 spice-core）—— CircuitSource 实现
+├── spice-tui/              # TUI 输出后端（依赖 indicatif + spice-core）—— Reporter 实现
+├── spice-cli/              # CLI 入口（组装 core + parser + tui）
+├── tests/                  # 集成测试
 ├── ngspice/                # 示例 SPICE 网表
 ├── docs/                   # mdBook 文档
 ├── Makefile                # 构建脚本
@@ -57,13 +58,21 @@ spice-tiny-fork/
 | `engine` | MNA 引擎：矩阵构建、Stamp、高斯消元求解、收敛判断 |
 | `element/` | 元件模型：R / C / D / V / I / VCVS / VCCS / VSIN / ISIN / VPWL |
 | `circuit` | 电路数据结构：节点 LUT、元件列表、子电路实例 |
-| `spice` | SPICE 网表解析器，实现 `CircuitSource` trait |
 | `expander` | 子电路递归展平 |
 | `analysis` | 仿真配置（步长、容差、迭代上限等） |
 | `wavewriter` | 波形数据写入文件 |
-| `bracket_expression` | 解析 `{param}` 和工程记数法 (`10k`, `4.7u`) |
+| `bracket_expression` | `Expression` 数据类型（`Literal` / `Identifier`） |
 | `source` | `CircuitSource` trait —— 电路来源的抽象接口 |
 | `report` | `Reporter` trait —— 仿真进度/诊断输出的抽象接口 |
+
+### `spice-parser` — SPICE 语法解析
+
+SPICE 网表的文本解析器，**依赖 `spice-core`**，实现 `CircuitSource` trait。
+
+| 模块 | 职责 |
+|------|------|
+| `spice` | SPICE 网表解析器（`.spi` / `.cir`），生成 `Circuit` + `Configuration` |
+| `value` | 工程记数法解析（`10k`, `4.7u`, `100n`, `1e-6`）和 `{param}` 表达式 |
 
 **三个核心 trait：**
 

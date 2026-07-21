@@ -3,9 +3,9 @@ use std::path::Path;
 
 extern crate tiny_spice;
 
+use spice_parser::Reader;
 use tiny_spice::element::Element;
 use tiny_spice::engine;
-use tiny_spice::spice;
 
 mod common;
 use crate::common::assert_nearly;
@@ -20,7 +20,7 @@ fn test_opamp_basic() {
     let spice_file = Path::new("./ngspice/opamp_basic.spi");
     spice_file.try_exists().expect("Can't access spice file");
 
-    let mut reader = spice::Reader::new();
+    let mut reader = Reader::new();
     let errors_exist = reader.read(spice_file);
     if errors_exist {
         println!("*FATAL* Errors in SPICE Deck so not doing simulations");

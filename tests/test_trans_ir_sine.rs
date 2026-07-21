@@ -11,7 +11,7 @@ mod common;
 #[allow(non_snake_case)]
 fn test_trans_ir_sine_10Hz() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 10e-6, 0.0);
     cfg.set_wavefile("waves/trans_ir_sine_10Hz.dat");
@@ -27,7 +27,7 @@ fn test_trans_ir_sine_10Hz() {
 #[allow(non_snake_case)]
 fn test_trans_ir_sine_1kHz() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 10e-6, 0.0);
     cfg.set_wavefile("waves/trans_ir_sine_1kHz.dat");

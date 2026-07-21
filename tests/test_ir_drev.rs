@@ -11,7 +11,7 @@ use crate::common::assert_nearly;
 #[test]
 fn test_ird_rev() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_dc_operating_point();
 

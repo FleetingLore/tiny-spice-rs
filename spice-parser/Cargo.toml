@@ -1,9 +1,10 @@
 [package]
-name = "spice_cli"
+name = "spice_parser"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+dev = []
+
 [dependencies]
 tiny_spice = { path = "../spice-core" }
-spice_parser = { path = "../spice-parser" }
-spice_tui = { path = "../spice-tui" }

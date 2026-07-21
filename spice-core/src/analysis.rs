@@ -39,7 +39,7 @@ impl fmt::Display for Statistics {
 
 /// Analysis datastructure holding all of the options such as
 /// RELTOL, ITL4, etc.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 #[allow(non_snake_case)]
 pub struct Configuration {
     /// What kind of analysis to run: DC op, transient, etc,
@@ -100,42 +100,32 @@ pub struct Configuration {
     pub wavefile: String,
 }
 
-impl Configuration {
-    /// Create a new `Analysis` datastructure with default settings for
-    /// all options.
-    pub fn new() -> Configuration {
+impl Default for Configuration {
+    fn default() -> Self {
         Configuration {
             kind: None,
-
-            // General
             GMIN: 1.0e-12,
             TDEGC: 27.0,
-
-            // Cnvergence
             RELTOL: 0.0001,
             VNTOL: 1.0e-6,
             ABSTOL: 1.0e-9,
-
-            // DC operating
             ITL1: 50,
-
-            // Transient
             TSTART: 0.0,
             TSTOP: 1e-3,
             TSTEP: 1e-6,
-
             FS: 0.25,
             FT: 0.25,
             RMIN: 1e03,
             RMAX: 5.0,
             ITL3: 6,
             ITL4: 50,
-
             ckt_name: "Default_Circuit_Name".to_string(),
             wavefile: "waves/default.dat".to_string(),
         }
     }
+}
 
+impl Configuration {
     // Configure the simulation engine for a transient analysis
     pub fn set_transient(&mut self, tstop: f64, tstep: f64, tstart: f64) {
         self.kind = Some(Kind::Transient);
@@ -154,16 +144,19 @@ impl Configuration {
         self.wavefile = filename.to_string();
     }
 
-    // Print the configuration settings
-    pub fn print_options(&self) {
-        println!("*************************************************************");
-        println!("*OPTION* ITL3 = {}; ITL4 = {}", self.ITL3, self.ITL4);
-        println!("*OPTION* FS = {}; FT = {}", self.FS, self.FT);
-        println!("*OPTION* RMIN = {}; RMAX = {}", self.RMIN, self.RMAX);
-        println!(
-            "*OPTION* RELTOL = {:0.12}; VNTOL = {:0.12}; ABSTOL = {:0.12}",
-            self.RELTOL, self.VNTOL, self.ABSTOL
-        );
-        println!("*************************************************************\n");
+    // Return a human-readable summary of configuration settings
+    pub fn summary(&self) -> String {
+        format!(
+            "ITL3={} ITL4={} FS={} FT={} RMIN={} RMAX={} RELTOL={:0.6} VNTOL={:0.6} ABSTOL={:0.6}",
+            self.ITL3,
+            self.ITL4,
+            self.FS,
+            self.FT,
+            self.RMIN,
+            self.RMAX,
+            self.RELTOL,
+            self.VNTOL,
+            self.ABSTOL
+        )
     }
 }

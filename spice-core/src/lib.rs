@@ -33,4 +33,3 @@ pub mod wavewriter;
 
 // Read and elaborate SPICE circuit descriptions
 pub mod expander;
-pub mod spice;

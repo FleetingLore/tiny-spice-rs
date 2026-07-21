@@ -11,7 +11,7 @@ use crate::common::assert_nearly;
 #[test]
 fn test_dc_ird() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
     cfg.set_dc_operating_point();
 
     let ckt = build(1e-9);
@@ -26,7 +26,7 @@ fn test_dc_ird() {
 #[allow(non_snake_case)]
 fn test_dc_ird_isat_1pA() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
     cfg.set_dc_operating_point();
 
     let ckt = build(1e-12);

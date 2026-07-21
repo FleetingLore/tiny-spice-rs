@@ -32,14 +32,14 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
-use crate::bracket_expression::Expression::Literal;
-use crate::bracket_expression::{extract_expression, extract_value};
-use crate::circuit::{Circuit, Instance};
-use crate::element::{CurrentSourceSine, VoltageSourcePwl, VoltageSourceSine};
-use crate::parameter::Parameter;
+use crate::value::{extract_expression, extract_value};
+use tiny_spice::bracket_expression::Expression::Literal;
+use tiny_spice::circuit::{Circuit, Instance};
+use tiny_spice::element::{CurrentSourceSine, VoltageSourcePwl, VoltageSourceSine};
+use tiny_spice::parameter::Parameter;
 
-use crate::analysis::{Configuration, Kind};
-use crate::expander;
+use tiny_spice::analysis::{Configuration, Kind};
+use tiny_spice::expander;
 
 /// Set the SPICE deck read mode
 #[allow(dead_code)]
@@ -72,7 +72,7 @@ impl Reader {
         let topckt = Circuit::new();
         Reader {
             ckts: vec![topckt],
-            cfg: Configuration::new(),
+            cfg: Configuration::default(),
             c: 0, // toplevel
             there_are_errors: false,
         }
@@ -386,7 +386,7 @@ impl Reader {
     fn extract_option(&mut self, bits: &[&str]) {
         // just 'option' with no arguments? - print the options as they stand
         if bits.len() == 1 {
-            self.cfg.print_options();
+            println!("*OPTIONS* {}", self.cfg.summary());
             return;
         }
 
@@ -740,7 +740,7 @@ impl Reader {
     }
 }
 
-impl crate::source::CircuitSource for Reader {
+impl tiny_spice::source::CircuitSource for Reader {
     fn read(&mut self, path: &Path) -> bool {
         Reader::read(self, path)
     }

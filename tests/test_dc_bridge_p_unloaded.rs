@@ -12,7 +12,7 @@ use crate::common::assert_nearly;
 #[allow(non_snake_case)]
 fn test_diode_bridge_unloaded_10V() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 10e-6, 0.0);
     cfg.set_dc_operating_point();

@@ -9,7 +9,7 @@ use tiny_spice::engine;
 #[allow(non_snake_case)]
 fn test_trans_ir_sine_1kHz_10us() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 10e-6, 0.0);
     cfg.set_wavefile("waves/trans_ird_sine_1kHz_10us.dat");
@@ -24,7 +24,7 @@ fn test_trans_ir_sine_1kHz_10us() {
 #[allow(non_snake_case)]
 fn test_trans_ir_sine_1kHz_1us() {
     let mut eng = engine::Engine::new();
-    let mut cfg = analysis::Configuration::new();
+    let mut cfg = analysis::Configuration::default();
 
     cfg.set_transient(2.0e-3, 1e-6, 0.0);
     cfg.set_wavefile("waves/trans_ird_sine_1kHz_1us.dat");
@@ -59,7 +59,7 @@ fn test_trans_ir_sine_loop() {
             for amp in amps.iter() {
                 for isat in isats.iter() {
                     let mut eng = engine::Engine::new();
-                    let mut cfg = analysis::Configuration::new();
+                    let mut cfg = analysis::Configuration::default();
 
                     cfg.set_transient(2.0e-3, *timestep, 0.0);
 
