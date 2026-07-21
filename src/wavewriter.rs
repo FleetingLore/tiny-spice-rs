@@ -3,25 +3,24 @@
 //! Routines to open a file and dump all the data from the current timestep
 //! into it.
 
-use std::io::prelude::*;
 use std::fs::File;
+use std::io::prelude::*;
 use std::path::Path;
 
 // for handle to node id lookup table
+use crate::circuit::NodeId;
 use std::collections::HashMap;
-use circuit::NodeId;
 
-pub struct WaveWriter<'hash>{
+pub struct WaveWriter<'hash> {
     file: Option<File>,
     lut: &'hash HashMap<NodeId, String>,
 }
 
 impl WaveWriter<'_> {
-
-    pub fn new<'hash>(filename: &str, lut: &'hash HashMap<NodeId, String>) 
-        -> Option<WaveWriter<'hash>>
-    {
-
+    pub fn new<'hash>(
+        filename: &str,
+        lut: &'hash HashMap<NodeId, String>,
+    ) -> Option<WaveWriter<'hash>> {
         // open file
         let path = Path::new(filename);
         let display = path.display();
@@ -31,30 +30,24 @@ impl WaveWriter<'_> {
         std::fs::create_dir_all(leadup).expect("Can't make waveform directory");
 
         // wave writer
-        let mut writer = WaveWriter {
-            file: None,
-            lut,
-        };
+        let mut writer = WaveWriter { file: None, lut };
 
         // open the path to write
         writer.file = match File::create(path) {
             Err(why) => {
-                println!("*ERROR* Can't open waveform file {}: {}",
-                         display, why );
+                println!("*ERROR* Can't open waveform file {}: {}", display, why);
                 None
-            },
+            }
             Ok(file) => {
                 println!("*INFO* Dumping into file {}", display);
                 Some(file)
-            },
+            }
         };
 
         Some(writer)
     }
 
-
     pub fn header(&mut self, c_nodes: usize, c_vsrcs: usize) {
-
         let mut names = "Time".to_string();
 
         for i in 0..c_nodes {
@@ -92,9 +85,5 @@ impl WaveWriter<'_> {
             line += "\n";
             let _ = file.write_all(line.as_bytes());
         }
-
     }
-
 }
-
-

@@ -1,13 +1,13 @@
 extern crate tiny_spice;
 
-use tiny_spice::circuit::*;
-use tiny_spice::engine;
 use tiny_spice::analysis;
+use tiny_spice::circuit::*;
+use tiny_spice::element::*;
+use tiny_spice::engine;
 
 #[test]
 #[allow(non_snake_case)]
 fn test_trans_ir_bridge_1kHz_10us() {
-
     let mut eng = engine::Engine::new();
     let mut cfg = analysis::Configuration::new();
 
@@ -21,12 +21,10 @@ fn test_trans_ir_bridge_1kHz_10us() {
     assert!(stats.end >= cfg.TSTOP);
 }
 
-
 #[test]
 //#[ignore]
 #[allow(non_snake_case)]
 fn test_trans_ir_bridge_1kHz_1us() {
-
     let mut eng = engine::Engine::new();
     let mut cfg = analysis::Configuration::new();
 
@@ -44,17 +42,18 @@ fn test_trans_ir_bridge_1kHz_1us() {
 #[ignore]
 #[allow(non_snake_case)]
 fn test_trans_ir_bridge_loaded_loop() {
-
     let timesteps = [10e-6, 5e-6, 2e-6, 1e-6];
     let amps = [-2.0, -1.0, -0.5, 0.5, 1.0, 2.0];
-    let freqs = [3.0e3, 2.5e3, 2.0e3, 1.0e3, 0.5e3, 0.4e3, 0.3e3, 0.2e3, 0.1e3, 0.05e3];
+    let freqs = [
+        3.0e3, 2.5e3, 2.0e3, 1.0e3, 0.5e3, 0.4e3, 0.3e3, 0.2e3, 0.1e3, 0.05e3,
+    ];
     let isats = [1e-9, 1e-12, 1e-13];
-/*
-    let timesteps = [10e-6, 1e-6];
-    let amps = [-2.0, 2.0];
-    let freqs = [10.0e3, 0.1e3];
-    let isats = [1e-9, 1e-13];
-*/
+    /*
+        let timesteps = [10e-6, 1e-6];
+        let amps = [-2.0, 2.0];
+        let freqs = [10.0e3, 0.1e3];
+        let isats = [1e-9, 1e-13];
+    */
 
     let mut i = 0;
     let mut fails = 0;
@@ -89,7 +88,6 @@ fn test_trans_ir_bridge_loaded_loop() {
     assert!(fails == 0);
 }
 
-
 fn build(amp: f64, freq: f64, isat: f64) -> Circuit {
     let mut ckt = Circuit::new();
 
@@ -99,28 +97,47 @@ fn build(amp: f64, freq: f64, isat: f64) -> Circuit {
     ckt.add_node("4");
 
     // bridge input voltage
-    ckt.elements.push(
-        Element::Isin(CurrentSourceSine{p: 0, n: 1, vo: 0.0, va: amp, freq: freq}),
-    );
-    ckt.elements.push(
-        Element::R(Resistor{ident: "r1".to_string(), a: 1, b: 0, value: 10.0}),
-    );
+    ckt.elements.push(Element::Isin(CurrentSourceSine {
+        p: 0,
+        n: 1,
+        vo: 0.0,
+        va: amp,
+        freq,
+    }));
+    ckt.elements.push(Element::R(Resistor {
+        ident: "r1".to_string(),
+        a: 1,
+        b: 0,
+        value: 10.0,
+    }));
 
-
-    ckt.elements.push(Element::V(VoltageSource{p: 2, n: 0, value: 0.0, idx:0}));
+    ckt.elements.push(Element::V(VoltageSource {
+        p: 2,
+        n: 0,
+        value: 0.0,
+        idx: 0,
+    }));
 
     // Diode bridge
     //  (1) is top
     //  (2) is bottom
-    ckt.elements.push( Element::D(Diode::new("D1", 1, 3, isat, 27.0) ) );
-    ckt.elements.push( Element::D(Diode::new("D2", 4, 1, isat, 27.0) ) );
-    ckt.elements.push( Element::D(Diode::new("D3", 2, 3, isat, 27.0) ) );
-    ckt.elements.push( Element::D(Diode::new("D4", 4, 2, isat, 27.0) ) );
+    ckt.elements
+        .push(Element::D(Diode::new("D1", 1, 3, isat, 27.0)));
+    ckt.elements
+        .push(Element::D(Diode::new("D2", 4, 1, isat, 27.0)));
+    ckt.elements
+        .push(Element::D(Diode::new("D3", 2, 3, isat, 27.0)));
+    ckt.elements
+        .push(Element::D(Diode::new("D4", 4, 2, isat, 27.0)));
 
     // load
-    ckt.elements.push( Element::R(Resistor{ident: "r2".to_string(), a: 3, b: 4, value: 1000.0}) );
+    ckt.elements.push(Element::R(Resistor {
+        ident: "r2".to_string(),
+        a: 3,
+        b: 4,
+        value: 1000.0,
+    }));
 
     ckt.build_node_id_lut();
     ckt
 }
-

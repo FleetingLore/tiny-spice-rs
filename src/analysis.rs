@@ -13,7 +13,7 @@ pub enum Kind {
 }
 
 impl fmt::Display for Kind {
-    fn fmt (&self, f:&mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Kind::Transient => write!(f, "Transient"),
             Kind::DcOperatingPoint => write!(f, "DC Operating Point"),
@@ -29,22 +29,19 @@ pub struct Statistics {
 }
 
 impl fmt::Display for Statistics {
-    fn fmt (&self, f:&mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut msg = format!("ANALYSIS: {}\n", self.kind);
         msg += format!("  Ended: {}\n", self.end).as_ref();
         msg += format!("  Iterations: {}\n", self.iterations).as_ref();
         write!(f, "{}", msg)
     }
-
 }
 
 /// Analysis datastructure holding all of the options such as
 /// RELTOL, ITL4, etc.
-#[derive(Clone)]
-#[derive(Default)]
+#[derive(Clone, Default)]
 #[allow(non_snake_case)]
 pub struct Configuration {
-
     /// What kind of analysis to run: DC op, transient, etc,
     pub kind: Option<Kind>,
 
@@ -103,9 +100,7 @@ pub struct Configuration {
     pub wavefile: String,
 }
 
-
 impl Configuration {
-
     /// Create a new `Analysis` datastructure with default settings for
     /// all options.
     pub fn new() -> Configuration {
@@ -113,7 +108,7 @@ impl Configuration {
             kind: None,
 
             // General
-            GMIN : 1.0e-12,
+            GMIN: 1.0e-12,
             TDEGC: 27.0,
 
             // Cnvergence
@@ -138,10 +133,8 @@ impl Configuration {
 
             ckt_name: "Default_Circuit_Name".to_string(),
             wavefile: "waves/default.dat".to_string(),
-
         }
     }
-
 
     // Configure the simulation engine for a transient analysis
     pub fn set_transient(&mut self, tstop: f64, tstep: f64, tstart: f64) {
@@ -162,17 +155,15 @@ impl Configuration {
     }
 
     // Print the configuration settings
-    pub fn print_options(&self) { 
+    pub fn print_options(&self) {
         println!("*************************************************************");
-        println!("*OPTION* ITL3 = {}; ITL4 = {}",
-                 self.ITL3, self.ITL4);
-        println!("*OPTION* FS = {}; FT = {}",
-                 self.FS, self.FT);
-        println!("*OPTION* RMIN = {}; RMAX = {}",
-                 self.RMIN, self.RMAX);
-        println!("*OPTION* RELTOL = {:0.12}; VNTOL = {:0.12}; ABSTOL = {:0.12}",
-                 self.RELTOL, self.VNTOL, self.ABSTOL);
+        println!("*OPTION* ITL3 = {}; ITL4 = {}", self.ITL3, self.ITL4);
+        println!("*OPTION* FS = {}; FT = {}", self.FS, self.FT);
+        println!("*OPTION* RMIN = {}; RMAX = {}", self.RMIN, self.RMAX);
+        println!(
+            "*OPTION* RELTOL = {:0.12}; VNTOL = {:0.12}; ABSTOL = {:0.12}",
+            self.RELTOL, self.VNTOL, self.ABSTOL
+        );
         println!("*************************************************************\n");
     }
 }
-

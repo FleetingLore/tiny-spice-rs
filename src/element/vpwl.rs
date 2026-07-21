@@ -1,19 +1,20 @@
 //! Piecewise Linear Voltage Source Implementation
 
-use crate::circuit::{NodeId};
+use std::fmt;
 
-#[derive(Clone,Debug)]
+use crate::circuit::NodeId;
+
+#[derive(Clone, Debug)]
 pub struct VoltageSourcePwl {
     pub p: NodeId,
     pub n: NodeId,
     pub pat: Vec<(f64, f64)>, // (time, val)
-    pub t_delay: f64, // delay
-    pub repeat: f64, // repeat spec
+    pub t_delay: f64,         // delay
+    pub repeat: f64,          // repeat spec
     pub idx: usize,
 }
 
 impl VoltageSourcePwl {
-
     // calculate the value at a certain time
     //
     // figure out where we are in the cycle.
@@ -34,7 +35,7 @@ impl VoltageSourcePwl {
         }
 
         // where in the cycle are we?
-        let t_cycle = ( t - self.t_delay ) % t_period;
+        let t_cycle = (t - self.t_delay) % t_period;
         if t_cycle < 0.0 {
             return 0.0;
         }
@@ -59,13 +60,16 @@ impl VoltageSourcePwl {
         //dbg!(t1,v1, t2,v2);
 
         // ... and interpolate between them
-        let mut gradient = (v2-v1) / (t2-t1);
+        let mut gradient = (v2 - v1) / (t2 - t1);
         if gradient.is_nan() {
             gradient = 0.0;
         }
         gradient * (t_cycle - t1) + v1
-
     }
-
 }
-    
+
+impl fmt::Display for VoltageSourcePwl {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Vpwl p:{} n:{}", self.p, self.n)
+    }
+}

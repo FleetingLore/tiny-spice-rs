@@ -1,15 +1,15 @@
 extern crate tiny_spice;
 
-use tiny_spice::circuit::*;
-use tiny_spice::engine;
 use tiny_spice::analysis;
+use tiny_spice::circuit::*;
+use tiny_spice::element::*;
+use tiny_spice::engine;
 
 mod common;
 use crate::common::assert_nearly;
 
 #[test]
 fn test_ird_vv() {
-
     let mut eng = engine::Engine::new();
     let mut cfg = analysis::Configuration::new();
 
@@ -26,29 +26,37 @@ fn test_ird_vv() {
     assert_nearly(v[4] + v[5], 3.0); // branch current
 }
 
-
 fn build() -> Circuit {
     let mut ckt = Circuit::new();
-    ckt.elements.push(
-        Element::I(CurrentSource{p: 0, n: 1, value: 3.0}),
-    );
+    ckt.elements.push(Element::I(CurrentSource {
+        p: 0,
+        n: 1,
+        value: 3.0,
+    }));
 
     // R with series 0V source to measure branch current
-    ckt.elements.push(
-        Element::V(VoltageSource{p: 1, n: 2, value: 0.0, idx: 0}),
-    );
+    ckt.elements.push(Element::V(VoltageSource {
+        p: 1,
+        n: 2,
+        value: 0.0,
+        idx: 0,
+    }));
 
-    ckt.elements.push(
-        Element::R(Resistor{ident: "R1".to_string(), a: 2, b: 0, value: 10.0}),
-    );
+    ckt.elements.push(Element::R(Resistor {
+        ident: "R1".to_string(),
+        a: 2,
+        b: 0,
+        value: 10.0,
+    }));
 
     // D with series 0V source to measure branch current
-    ckt.elements.push(
-        Element::V(VoltageSource{p: 1, n: 3, value: 0.0, idx: 1}),
-    );
-    ckt.elements.push(
-        Element::D(Diode::new("D1", 3, 0, 1e-9, 27.0)),
-    );
+    ckt.elements.push(Element::V(VoltageSource {
+        p: 1,
+        n: 3,
+        value: 0.0,
+        idx: 1,
+    }));
+    ckt.elements
+        .push(Element::D(Diode::new("D1", 3, 0, 1e-9, 27.0)));
     ckt
 }
-

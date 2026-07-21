@@ -1,10 +1,10 @@
 //! Tiny-Spice-RS - A teeny weeny SPICE circuit simulator
 
 // Circuit and Analysis Datastructures
-pub mod parameter;
+pub mod analysis;
 pub mod bracket_expression;
 pub mod circuit;
-pub mod analysis;
+pub mod parameter;
 
 // Simulation Engine
 pub mod engine;
@@ -16,6 +16,5 @@ pub mod element;
 pub mod wavewriter;
 
 // Read and elaborate SPICE circuit descriptions
-pub mod spice;
 pub mod expander;
-
+pub mod spice;

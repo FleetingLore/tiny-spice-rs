@@ -1,19 +1,17 @@
 /// Simple DC test of VCCS and VCVS
-
 use std::path::Path;
 
 extern crate tiny_spice;
 
-use tiny_spice::spice;
-use tiny_spice::engine;
 use tiny_spice::element::Element;
+use tiny_spice::engine;
+use tiny_spice::spice;
 
 mod common;
 use crate::common::assert_nearly;
 
 #[test]
 fn test_vc_vs_cs_basic() {
-
     // Initialise the SPICE Engine
     //  (do this first to get the banner at the top)
     let mut eng = engine::Engine::new();
@@ -34,15 +32,12 @@ fn test_vc_vs_cs_basic() {
 
     // find the sinewave source and hack the offset to get a non-zero dc value
     for el in &mut ckt.elements {
-        match el {
-            Element::Isin(ref mut src) => {
-                src.vo = 3.0;
-            },
-            _ => {},
+        if let Element::Isin(src) = el {
+            src.vo = 3.0;
         }
     }
 
-    let stats = eng.dc_operating_point(&ckt, &cfg);
+    let stats = eng.dc_operating_point(&ckt, cfg);
     let v = eng.dc().unwrap();
 
     assert_nearly(v[1], 3.0);
@@ -51,6 +46,4 @@ fn test_vc_vs_cs_basic() {
 
     // linear solve should only take 2 steps to converge
     assert_eq!(stats.iterations, 2);
-
 }
-

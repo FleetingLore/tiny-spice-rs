@@ -1,14 +1,11 @@
 /* "integration" tests
  *
- * after  ripgrep/tests/tests.rs 
+ * after  ripgrep/tests/tests.rs
  */
-
 
 use std::process::Command;
 
-
 macro_rules! spice {
-
     ($name:ident, $path: expr) => {
         #[test]
         fn $name() {
@@ -18,11 +15,8 @@ macro_rules! spice {
 
             assert!(output.status.success());
         }
-
     };
-
 }
-
 
 // cargo test spice - will run all tests starting with "spice"
 
@@ -34,4 +28,3 @@ spice!(spice_irrrr, "./ngspice/test_irrrr.spi");
 
 // Transient analysis of a HPF
 spice!(spice_irrc, "./ngspice/test_irrc.spi");
-

@@ -1,9 +1,18 @@
-target
 *.log
 *.swp
-*.~lock*
 waves
 log
-__pycache__
 spice
-tsr-book
+
+# Darwin
+.DS_Store
+
+# python
+__pycache__
+
+# mdbook
+docs/book
+
+# rust
+target/
+Cargo.lock

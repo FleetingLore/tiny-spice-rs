@@ -20,24 +20,22 @@ pub enum Expression {
 }
 
 impl fmt::Display for Expression {
-    fn fmt (&self, f:&mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Expression::Literal(ref p) => {
                 write!(f, "{}", p)
-            },
+            }
             Expression::Identifier(ref p) => {
                 write!(f, "Identifier({})", p)
-            },
+            }
         }
     }
 }
-
 
 /// Extract a bracket expression
 ///
 /// FIXME - allow `_` too...
 pub fn extract_expression(text: &str) -> Option<Expression> {
-
     if !text.starts_with('{') {
         let val = extract_value(text);
         if let Some(n) = val {
@@ -52,19 +50,19 @@ pub fn extract_expression(text: &str) -> Option<Expression> {
 
     let expr_str: Vec<_> = text.chars().collect();
 
-    let mut i:usize = 0;
+    let mut i: usize = 0;
 
     trace!("looking for '{{'");
     if expr_str[i] == '{' {
         i += 1
     } else {
         println!("*ERROR* - expected '{{'");
-        return None
+        return None;
     }
 
     while expr_str[i].is_whitespace() {
         i += 1;
-        if i >expr_str.len() {
+        if i > expr_str.len() {
             return None;
         }
     }
@@ -92,14 +90,13 @@ pub fn extract_expression(text: &str) -> Option<Expression> {
     if expr_str[i] == '}' {
     } else {
         println!("*ERROR* - expected '}}'");
-        return None
+        return None;
     }
 
     trace!("Identifier: '{}'", ident);
 
     Some(Expression::Identifier(ident))
 }
-
 
 /// Extract an element identifier from SPICE
 // Just take the entire thing as an identifier
@@ -113,7 +110,7 @@ enum ValueState {
     Int,
     Frac,
     ExpStart, // '+' | '-' | digit
-    Exp, // digit
+    Exp,      // digit
     Unit,
 }
 
@@ -142,17 +139,16 @@ pub fn extract_value(text: &str) -> Option<f64> {
     let mut c: char;
     let mut state = ValueState::Start;
     let mut nxt;
-    let mut eng_mult :f64 = 1.0;
+    let mut eng_mult: f64 = 1.0;
 
     //println!("VALUE: '{}'", text);
     let mut text_iter = text.chars();
 
-    fn eval( txt :&str, mult: f64) -> Option<f64> {
-        Some( txt.parse::<f64>().unwrap() * mult )
+    fn eval(txt: &str, mult: f64) -> Option<f64> {
+        Some(txt.parse::<f64>().unwrap() * mult)
     }
 
     'things: loop {
-
         if let Some(c_) = text_iter.next() {
             c = c_;
         } else {
@@ -160,100 +156,117 @@ pub fn extract_value(text: &str) -> Option<f64> {
         }
         //println!(" {:?} '{}'", state, c);
         match state {
-
-            ValueState::Start => {
-                match c {
-                    '+' | '-' => { float_str.push(c); nxt = ValueState::Int },
-                    '0' ..= '9' => { float_str.push(c); nxt = ValueState::Int },
-                    _ => break 'things
+            ValueState::Start => match c {
+                '+' | '-' => {
+                    float_str.push(c);
+                    nxt = ValueState::Int
                 }
-            },
-
-            ValueState::Int => {
-                match c {
-                    '0' ..= '9' => { float_str.push(c); nxt = ValueState::Int },
-                    '.' => { float_str.push(c); nxt = ValueState::Frac },
-                    'e' => { float_str.push(c); nxt = ValueState::ExpStart },
-                    'k' => {
-                        eng_mult = 1e3;
-                        value = eval(&float_str, eng_mult);
-                        nxt = ValueState::Unit
-                    },
-                    'm' => {
-                        eng_mult = 1e-3;
-                        value = eval(&float_str, eng_mult);
-                        nxt = ValueState::Unit
-                    },
-                    'u' => {
-                        eng_mult = 1e-6;
-                        value = eval(&float_str, eng_mult);
-                        nxt = ValueState::Unit
-                    },
-                    'n' => {
-                        eng_mult = 1e-9;
-                        value = eval(&float_str, eng_mult);
-                        nxt = ValueState::Unit
-                    },
-                    'p' => {
-                        eng_mult = 1e-12;
-                        value = eval(&float_str, eng_mult);
-                        nxt = ValueState::Unit
-                    },
-                    _ => break 'things
+                '0'..='9' => {
+                    float_str.push(c);
+                    nxt = ValueState::Int
                 }
+                _ => break 'things,
             },
 
-            ValueState::Frac => {
-                match c {
-                    '0' ..= '9' => { float_str.push(c); nxt = ValueState::Frac },
-                    'e' => { float_str.push(c); nxt = ValueState::ExpStart },
-                    'k' => {
-                        eng_mult = 1e3;
-                        value = eval(&float_str, eng_mult);
-                        nxt = ValueState::Unit
-                    },
-                    'm' => {
-                        eng_mult = 1e-3;
-                        value = eval(&float_str, eng_mult);
-                        nxt = ValueState::Unit
-                    },
-                    'u' => {
-                        eng_mult = 1e-6;
-                        value = eval(&float_str, eng_mult);
-                        nxt = ValueState::Unit
-                    },
-                    'n' => {
-                        eng_mult = 1e-9;
-                        value = eval(&float_str, eng_mult);
-                        nxt = ValueState::Unit
-                    },
-                    'p' => {
-                        eng_mult = 1e-12;
-                        value = eval(&float_str, eng_mult);
-                        nxt = ValueState::Unit
-                    },
-                    _ => break 'things
+            ValueState::Int => match c {
+                '0'..='9' => {
+                    float_str.push(c);
+                    nxt = ValueState::Int
                 }
-            },
-
-            ValueState::ExpStart => {
-                match c {
-                    '+' | '-' => { float_str.push(c); nxt = ValueState::Exp },
-                    '0' ..= '9' => { float_str.push(c); nxt = ValueState::Exp },
-                    _ => break 'things
+                '.' => {
+                    float_str.push(c);
+                    nxt = ValueState::Frac
                 }
-            },
-
-            ValueState::Exp => {
-                match c {
-                    '0' ..= '9' => { float_str.push(c); nxt = ValueState::Exp },
-                    _ => break 'things
+                'e' => {
+                    float_str.push(c);
+                    nxt = ValueState::ExpStart
                 }
+                'k' => {
+                    eng_mult = 1e3;
+                    value = eval(&float_str, eng_mult);
+                    nxt = ValueState::Unit
+                }
+                'm' => {
+                    eng_mult = 1e-3;
+                    value = eval(&float_str, eng_mult);
+                    nxt = ValueState::Unit
+                }
+                'u' => {
+                    eng_mult = 1e-6;
+                    value = eval(&float_str, eng_mult);
+                    nxt = ValueState::Unit
+                }
+                'n' => {
+                    eng_mult = 1e-9;
+                    value = eval(&float_str, eng_mult);
+                    nxt = ValueState::Unit
+                }
+                'p' => {
+                    eng_mult = 1e-12;
+                    value = eval(&float_str, eng_mult);
+                    nxt = ValueState::Unit
+                }
+                _ => break 'things,
             },
 
-            ValueState::Unit => {
-                break 'things
+            ValueState::Frac => match c {
+                '0'..='9' => {
+                    float_str.push(c);
+                    nxt = ValueState::Frac
+                }
+                'e' => {
+                    float_str.push(c);
+                    nxt = ValueState::ExpStart
+                }
+                'k' => {
+                    eng_mult = 1e3;
+                    value = eval(&float_str, eng_mult);
+                    nxt = ValueState::Unit
+                }
+                'm' => {
+                    eng_mult = 1e-3;
+                    value = eval(&float_str, eng_mult);
+                    nxt = ValueState::Unit
+                }
+                'u' => {
+                    eng_mult = 1e-6;
+                    value = eval(&float_str, eng_mult);
+                    nxt = ValueState::Unit
+                }
+                'n' => {
+                    eng_mult = 1e-9;
+                    value = eval(&float_str, eng_mult);
+                    nxt = ValueState::Unit
+                }
+                'p' => {
+                    eng_mult = 1e-12;
+                    value = eval(&float_str, eng_mult);
+                    nxt = ValueState::Unit
+                }
+                _ => break 'things,
             },
+
+            ValueState::ExpStart => match c {
+                '+' | '-' => {
+                    float_str.push(c);
+                    nxt = ValueState::Exp
+                }
+                '0'..='9' => {
+                    float_str.push(c);
+                    nxt = ValueState::Exp
+                }
+                _ => break 'things,
+            },
+
+            ValueState::Exp => match c {
+                '0'..='9' => {
+                    float_str.push(c);
+                    nxt = ValueState::Exp
+                }
+                _ => break 'things,
+            },
+
+            ValueState::Unit => break 'things,
         }
 
         //println!(" -> {:?} '{}'", nxt, float_str);
@@ -263,13 +276,9 @@ pub fn extract_value(text: &str) -> Option<f64> {
     // if we've broken out of the loop at a point where the gathered
     // string might be a valid number, calculate it.
     match state {
-        ValueState::Int | ValueState::Frac | ValueState::Exp => {
-            value = eval(&float_str, eng_mult)
-        },
+        ValueState::Int | ValueState::Frac | ValueState::Exp => value = eval(&float_str, eng_mult),
         _ => {}
     }
 
     value
 }
-
-

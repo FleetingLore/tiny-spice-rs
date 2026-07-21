@@ -1,15 +1,15 @@
 extern crate tiny_spice;
 
-use tiny_spice::circuit::*;
-use tiny_spice::engine;
 use tiny_spice::analysis;
+use tiny_spice::circuit::*;
+use tiny_spice::element::*;
+use tiny_spice::engine;
 
 mod common;
 
 #[test]
 #[allow(non_snake_case)]
 fn test_irrc_trans_hpf_1kHz() {
-
     let mut eng = engine::Engine::new();
     let mut cfg = analysis::Configuration::new();
 
@@ -26,7 +26,6 @@ fn test_irrc_trans_hpf_1kHz() {
 #[test]
 #[allow(non_snake_case)]
 fn test_irrc_trans_hpf_2kHz() {
-
     let mut eng = engine::Engine::new();
     let mut cfg = analysis::Configuration::new();
 
@@ -43,7 +42,6 @@ fn test_irrc_trans_hpf_2kHz() {
 #[test]
 #[allow(non_snake_case)]
 fn test_irrc_trans_hpf_5kHz() {
-
     let mut eng = engine::Engine::new();
     let mut cfg = analysis::Configuration::new();
 
@@ -60,7 +58,6 @@ fn test_irrc_trans_hpf_5kHz() {
 #[test]
 #[allow(non_snake_case)]
 fn test_irrc_trans_hpf_10kHz() {
-
     let mut eng = engine::Engine::new();
     let mut cfg = analysis::Configuration::new();
 
@@ -74,30 +71,41 @@ fn test_irrc_trans_hpf_10kHz() {
     assert!(stats.end >= cfg.TSTOP);
 }
 
-
-fn build( freq: f64 ) -> Circuit {
+fn build(freq: f64) -> Circuit {
     let mut ckt = Circuit::new();
 
     ckt.add_node("1");
     ckt.add_node("2");
 
     // 10V Voltage Source
-    ckt.elements.push(
-        Element::Isin(CurrentSourceSine{p: 0, n: 1, vo: 0.0, va: 10.0, freq: freq}),
-    );
-    ckt.elements.push(
-        Element::R(Resistor{ident: "r1".to_string(), a: 1, b: 0, value: 1.0}),
-    );
+    ckt.elements.push(Element::Isin(CurrentSourceSine {
+        p: 0,
+        n: 1,
+        vo: 0.0,
+        va: 10.0,
+        freq,
+    }));
+    ckt.elements.push(Element::R(Resistor {
+        ident: "r1".to_string(),
+        a: 1,
+        b: 0,
+        value: 1.0,
+    }));
 
     // High-pass filter - 5kHz cut-off
-    ckt.elements.push(
-        Element::C(Capacitor{ident: "c1".to_string(), a: 1, b: 2, value: 0.032e-6}),
-    );
-    ckt.elements.push(
-        Element::R(Resistor{ident: "r2".to_string(), a: 2, b: 0, value: 1.0e3}),
-    );
+    ckt.elements.push(Element::C(Capacitor {
+        ident: "c1".to_string(),
+        a: 1,
+        b: 2,
+        value: 0.032e-6,
+    }));
+    ckt.elements.push(Element::R(Resistor {
+        ident: "r2".to_string(),
+        a: 2,
+        b: 0,
+        value: 1.0e3,
+    }));
 
     ckt.build_node_id_lut();
     ckt
 }
-

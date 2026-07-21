@@ -1,7 +1,9 @@
 //! Diode Implementation
 
 use std::cell::Cell;
-use crate::circuit::{NodeId, BOLTZMANN, CHARGE, GMIN};
+use std::fmt;
+
+use crate::circuit::{BOLTZMANN, CHARGE, GMIN, NodeId};
 
 /// Program exectution trace macro - prefix `<diode>`
 macro_rules! trace {
@@ -26,7 +28,6 @@ pub struct Diode {
 }
 
 impl Diode {
-
     pub fn new(ident: &str, p: NodeId, n: NodeId, i_sat: f64, tdegc: f64) -> Diode {
         let mut d = Diode {
             ident: ident.to_string(),
@@ -45,16 +46,14 @@ impl Diode {
         d
     }
 
-
     // http://dev.hypertriton.com/edacious/trunk/doc/lec.pdf
     // page 4 of 14
     pub fn linearize(&self, v_hat: f64, _: f64) -> (f64, f64) {
-       
         // limit the excursion, following Colon via Nagel
         let v_d_prev = self.v_d_prev.get();
         let v_delta = v_hat - v_d_prev;
 
-        let v_d_i :f64;
+        let v_d_i: f64;
         #[allow(clippy::if_same_then_else)] // FIXME??
         if v_hat < self.v_crit {
             v_d_i = v_hat;
@@ -63,29 +62,30 @@ impl Diode {
         } else if v_d_prev <= 0.0 {
             v_d_i = self.v_thermal * (v_hat / self.v_thermal).ln();
         } else {
-
-            let arg :f64 = 1.0 + (v_delta / self.v_thermal);
+            let arg: f64 = 1.0 + (v_delta / self.v_thermal);
             if arg <= 0.0 {
-                v_d_i  = self.v_crit;
+                v_d_i = self.v_crit;
             } else {
                 v_d_i = v_d_prev + self.v_thermal * arg.ln();
             }
             trace!("v_d {}, v_d_prev {}", v_hat, v_d_prev);
             trace!(" arg {}, v_d_i {}", arg, v_d_i);
         }
-        trace!("V_d from {} V to {} V (v_crit={})", v_hat, v_d_i, self.v_crit);
+        trace!(
+            "V_d from {} V to {} V (v_crit={})",
+            v_hat, v_d_i, self.v_crit
+        );
 
         // current through the diode, given the bias voltage
-        let exp_vd_over_vt =(v_d_i / self.v_thermal).exp();
+        let exp_vd_over_vt = (v_d_i / self.v_thermal).exp();
 
-        let i_d = self.i_sat * ( exp_vd_over_vt - 1.0 );
+        let i_d = self.i_sat * (exp_vd_over_vt - 1.0);
 
         // calculate the diode companion model parameters
         // companion model is a current source in parallel with a resistor
         let mut g_eq: f64;
         let i_eq: f64;
         if i_d.is_finite() {
-
             // Equivalent conductance, limited to help convergence
             g_eq = (self.i_sat / self.v_thermal) * exp_vd_over_vt;
             if g_eq < GMIN {
@@ -94,7 +94,6 @@ impl Diode {
 
             // equivalent current source to pick up the slack
             i_eq = i_d - (g_eq * v_d_i);
-
         } else {
             panic!("*FATAL* Possibly bad I_d {}", i_d);
         }
@@ -120,12 +119,18 @@ impl Diode {
     /// See Nagel, section 5
     fn update_v_crit(&mut self) {
         // critical voltage for Colon
-        self.v_crit = 
-            self.v_thermal 
-            * ( self.v_thermal / ( (2.0_f64).sqrt() * self.i_sat ) )
-            .ln();
+        self.v_crit = self.v_thermal * (self.v_thermal / ((2.0_f64).sqrt() * self.i_sat)).ln();
     }
+}
 
+impl fmt::Display for Diode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "D p:{} n:{} I_sat={} A ({})",
+            self.p, self.n, self.i_sat, self.ident
+        )
+    }
 }
 
 #[cfg(test)]
@@ -140,11 +145,10 @@ mod tests {
         println!("DATA pt Vd G_eq I_eq I_d");
         println!("DATA int V S A A");
         for pt in -POINTS..POINTS {
-            let v_d = pt as f64 * (VMAX/POINTS as f64);
+            let v_d = pt as f64 * (VMAX / POINTS as f64);
             let (g_eq, i_eq) = diode.linearize(v_d, v_d);
             let i_d = (v_d * g_eq) + i_eq;
             println!("DATA {} {} {} {} {}", pt, v_d, g_eq, i_eq, i_d);
         }
     }
-
 }

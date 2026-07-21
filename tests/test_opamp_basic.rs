@@ -1,19 +1,17 @@
 /// Read in the opamp macromodel and test some values
-
 use std::path::Path;
 
 extern crate tiny_spice;
 
-use tiny_spice::spice;
-use tiny_spice::engine;
 use tiny_spice::element::Element;
+use tiny_spice::engine;
+use tiny_spice::spice;
 
 mod common;
 use crate::common::assert_nearly;
 
 #[test]
 fn test_opamp_basic() {
-
     // Initialise the SPICE Engine
     //  (do this first to get the banner at the top)
     let mut eng = engine::Engine::new();
@@ -36,20 +34,15 @@ fn test_opamp_basic() {
     // a non-zero dc value
     let vin = 6.0;
     for el in &mut ckt.elements {
-        match el {
-            Element::Vsin(ref mut src) => {
-                src.vo = vin;
-            },
-            _ => {},
+        if let Element::Vsin(src) = el {
+            src.vo = vin;
         }
     }
 
-    let _ = eng.dc_operating_point(&ckt, &cfg);
+    let _ = eng.dc_operating_point(&ckt, cfg);
     let v = eng.dc().unwrap();
 
     assert_nearly(vin, v[1]); // v(in)
-    assert_nearly(-10.0*vin, v[3]); // v(out1) [vccs]
-    assert_nearly(2.0*vin, v[4]); // v(out2) [vcvs]
-
+    assert_nearly(-10.0 * vin, v[3]); // v(out1) [vccs]
+    assert_nearly(2.0 * vin, v[4]); // v(out2) [vcvs]
 }
-

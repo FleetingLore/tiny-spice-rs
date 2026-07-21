@@ -3,9 +3,8 @@ extern crate tiny_spice;
 use std::env;
 use std::path::Path;
 
-use tiny_spice::spice;
 use tiny_spice::engine;
-
+use tiny_spice::spice;
 
 /// Read a spice file, and execute it
 fn main() {
@@ -40,6 +39,4 @@ fn main() {
     } else {
         println!("\n*ERROR* Bad, bad bad... '{}'", &args[1]);
     }
-
 }
-

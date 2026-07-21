@@ -28,16 +28,15 @@
 //!   * Subcircuit definitions with `.subckt` and `.ends`
 //!   * Instantiations with `X...`
 
-use std::path::{Path, PathBuf};
 use std::fs::File;
-use std::io::{BufReader, BufRead};
+use std::io::{BufRead, BufReader};
+use std::path::{Path, PathBuf};
 
-use crate::circuit::{Circuit, CurrentSourceSine, VoltageSourceSine};
-use crate::circuit::{VoltageSourcePwl};
-use crate::circuit::{Instance};
-use crate::parameter::{Parameter};
+use crate::bracket_expression::Expression::Literal;
 use crate::bracket_expression::{extract_expression, extract_value};
-use crate::bracket_expression::Expression::{Literal};
+use crate::circuit::{Circuit, Instance};
+use crate::element::{CurrentSourceSine, VoltageSourcePwl, VoltageSourceSine};
+use crate::parameter::Parameter;
 
 use crate::analysis::{Configuration, Kind};
 use crate::expander;
@@ -51,6 +50,7 @@ macro_rules! trace {
 }
 
 /// Set the SPICE deck read mode
+#[allow(dead_code)]
 enum ReadMode {
     /// Toplevel, like include, but sets the toplevel circuit name
     TopLevel,
@@ -59,7 +59,6 @@ enum ReadMode {
     /// Include only stuff in the named `.lib` section
     Library(String),
 }
-
 
 /// Datastructure for info parsed from the SPICE deck
 pub struct Reader {
@@ -71,12 +70,10 @@ pub struct Reader {
     /// Track which circuit in the `ckts` list that we're adding things too
     c: usize,
     /// Flag if problems were encountered during parsing
-    there_are_errors: bool
+    there_are_errors: bool,
 }
 
-
 impl Reader {
-
     #[allow(clippy::new_without_default)]
     /// Initialise with an empty toplevel circuit
     pub fn new() -> Reader {
@@ -90,12 +87,11 @@ impl Reader {
     }
 
     /// Read and parse a SPICE deck
-    pub fn read(&mut self, filepath:&Path) -> bool {
+    pub fn read(&mut self, filepath: &Path) -> bool {
         self.read_spice(filepath, ReadMode::TopLevel)
     }
 
     fn read_spice(&mut self, filepath: &Path, readmode: ReadMode) -> bool {
-
         let input = File::open(filepath).unwrap();
         let buf = BufReader::new(input);
         let mut lines_iter = buf.lines();
@@ -111,15 +107,21 @@ impl Reader {
                 let ckt_name = filepath.to_str().expect("cant stringify SPICE filepath");
                 self.cfg.ckt_name = ckt_name.to_string();
                 self.ckts[0].name = ckt_name.to_string();
-                println!("*INFO* Reading toplevel SPICE file: '{}'", filepath.display());
-            },
+                println!(
+                    "*INFO* Reading toplevel SPICE file: '{}'",
+                    filepath.display()
+                );
+            }
             ReadMode::Include => {
                 println!("*INFO* Including SPICE file: '{}'", filepath.display());
-            },
+            }
             ReadMode::Library(ref txt) => {
                 libname = Some(txt.to_string());
-                println!("*INFO* Extracting library '{}' from '{}'",
-                         txt, filepath.display());
+                println!(
+                    "*INFO* Extracting library '{}' from '{}'",
+                    txt,
+                    filepath.display()
+                );
             }
         };
 
@@ -128,7 +130,7 @@ impl Reader {
 
         for line_wr in lines_iter {
             let line = line_wr.unwrap();
-            let all_bits :Vec<&str> = line.split_whitespace().collect();
+            let all_bits: Vec<&str> = line.split_whitespace().collect();
 
             // jump blank lines
             if all_bits.is_empty() {
@@ -153,34 +155,28 @@ impl Reader {
 
             // if we're reading a lib and we haven't matched the `.lib` start
             // definition yet, skip...
-            if let Some(ref libn) = libname {
-                if !in_libdef {
-                    if (bits.len() == 2) && (bits[0] == ".lib") && (bits[1] == libn) {
-                        in_libdef = true;
-                        trace!("Found library section '{}'", libn);
-                    } else {
-                        trace!("Not in library definition '{}'...", libn);
-                    }
-                    continue; // either way, skip this line
+            if let Some(ref libn) = libname
+                && !in_libdef
+            {
+                if (bits.len() == 2) && (bits[0] == ".lib") && (bits[1] == libn) {
+                    in_libdef = true;
+                    trace!("Found library section '{}'", libn);
+                } else {
+                    trace!("Not in library definition '{}'...", libn);
                 }
+                continue; // either way, skip this line
             }
-
 
             // let's go
             if in_control_block {
                 trace!("*INFO* Parsing control '{}'", bits[0]);
                 if bits[0] == "op" {
                     self.cfg.kind = Some(Kind::DcOperatingPoint);
-                    let wavefile = Path::new("waves")
-                        .join(&self.cfg.ckt_name)
-                        .join("dc.dat");
+                    let wavefile = Path::new("waves").join(&self.cfg.ckt_name).join("dc.dat");
                     self.cfg.set_wavefile(wavefile.to_str().expect("CasdfasDF"));
-
                 } else if bits[0] == "tran" {
                     self.cfg.kind = Some(Kind::Transient);
-                    let wavefile = Path::new("waves")
-                        .join(&self.cfg.ckt_name)
-                        .join("tran.dat");
+                    let wavefile = Path::new("waves").join(&self.cfg.ckt_name).join("tran.dat");
                     self.cfg.set_wavefile(wavefile.to_str().expect("CasdfasDF"));
 
                     // step stop <start>
@@ -194,14 +190,13 @@ impl Reader {
                         self.cfg.TSTART = extract_value(bits[3]).unwrap();
                     }
                 } else if bits[0] == "option" {
-                        self.extract_option(&bits);
+                    self.extract_option(&bits);
                 } else if bits[0] == ".endc" {
                     in_control_block = false;
                 } else {
                     println!("*WARN* Ignoring unrecognised command '{}'", bits[0]);
                 }
             } else {
-
                 // find out what we're looking at
                 if bits[0] == ".ends" {
                     trace!("Leaving subcircuit");
@@ -318,9 +313,7 @@ impl Reader {
                         //self.ckts[0].add_subckt(subckt);
                         in_subckt = true;
                     } else if bits[0] == ".lib" {
-
                         match &readmode {
-
                             ReadMode::TopLevel => {
                                 // i'm not supporting nested lib calls, so this should be a
                                 // library import statement
@@ -329,19 +322,21 @@ impl Reader {
                                 }
                                 let libfile_path = look_for_file(filepath, bits[1]);
                                 if let Some(libpath) = libfile_path {
-                                    let _ = self.read_spice(&libpath, ReadMode::Library(bits[2].to_string()));
+                                    let _ = self.read_spice(
+                                        &libpath,
+                                        ReadMode::Library(bits[2].to_string()),
+                                    );
                                 } else {
                                     panic!("Couldn't find '{}' in the search paths", bits[1]);
                                 }
-                            },
+                            }
                             ReadMode::Include => {
                                 todo!(".include in a .lib");
-                            },
+                            }
                             ReadMode::Library(_) => {
                                 panic!("*FATAL* nested .lib commands not supported");
                             }
                         }
-
                     } else if bits[0] == ".endl" {
                         if in_libdef {
                             trace!("End of lib");
@@ -368,13 +363,13 @@ impl Reader {
 
         // if we were reading a library definition and we haven't found a
         // start (or FIXME a finish), then complain.
-        if let ReadMode::Library(ref libn) = readmode {
-            if !lib_read_ok {
-                panic!("Did not find lib definition for '{}'", libn);
-            }
+        if let ReadMode::Library(ref libn) = readmode
+            && !lib_read_ok
+        {
+            panic!("Did not find lib definition for '{}'", libn);
         }
 
-        println!("Number of subcircuit definitions: {}", self.ckts.len()-1);
+        println!("Number of subcircuit definitions: {}", self.ckts.len() - 1);
         for ckt in &self.ckts {
             println!("\nCircuit: {}", ckt.name);
             println!(" Ports: {}", ckt.num_ports);
@@ -397,7 +392,6 @@ impl Reader {
     // only support one parameter per option line
     /// Parse a control block option command
     fn extract_option(&mut self, bits: &[&str]) {
-
         // just 'option' with no arguments? - print the options as they stand
         if bits.len() == 1 {
             self.cfg.print_options();
@@ -413,15 +407,14 @@ impl Reader {
         match bits[1] {
             "ABSTOL" => {
                 self.cfg.ABSTOL = extract_value(bits[3]).unwrap();
-            },
+            }
             "RELTOL" => {
                 self.cfg.RELTOL = extract_value(bits[3]).unwrap();
-            },
+            }
             "RMAX" => {
                 self.cfg.RMAX = extract_value(bits[3]).unwrap();
-            },
-            _ => {
             }
+            _ => {}
         }
     }
 
@@ -445,7 +438,7 @@ impl Reader {
         line = line.replace('(', "");
         line = line.replace(')', "");
 
-        let all_bits :Vec<&str> = line.split_whitespace().collect();
+        let all_bits: Vec<&str> = line.split_whitespace().collect();
         if all_bits.len() != 3 {
             println!("*ERROR* not enough parameters to SIN()");
         }
@@ -483,7 +476,7 @@ impl Reader {
         line = line.replace('(', "");
         line = line.replace(')', "");
 
-        let all_bits :Vec<&str> = line.split_whitespace().collect();
+        let all_bits: Vec<&str> = line.split_whitespace().collect();
         if all_bits.len() != 3 {
             println!("*ERROR* not enough parameters to SIN()");
         }
@@ -498,10 +491,9 @@ impl Reader {
             vo: offset,
             va: amplitude,
             freq: frequency,
-            idx: 0
+            idx: 0,
         }
     }
-
 
     /// extract the stuff from PWL
     fn extract_v_pwl(&mut self, bits: &[&str]) -> VoltageSourcePwl {
@@ -515,7 +507,7 @@ impl Reader {
             pat: vec![],
             repeat: -1.0,
             t_delay: 0.0,
-            idx: 0
+            idx: 0,
         };
 
         // work from the end and pick off any variables:
@@ -525,7 +517,6 @@ impl Reader {
             if bits[i].contains('=') {
                 n_params += 1;
                 if let Some(param) = self.extract_override(bits[i]) {
-
                     // eugh... assume the parameter value is a literal.
                     let val = if let Some(Literal(v)) = param.expr {
                         v
@@ -534,11 +525,10 @@ impl Reader {
                     };
 
                     match param.name.as_str() {
-                        "r" => { src.repeat = val},
-                        "td" => { src.t_delay = val},
+                        "r" => src.repeat = val,
+                        "td" => src.t_delay = val,
                         _ => {
-                            println!("*WARNING* unrecogised PWL parameter '{}'",
-                                param.name);
+                            println!("*WARNING* unrecogised PWL parameter '{}'", param.name);
                         }
                     }
                 } else {
@@ -576,7 +566,7 @@ impl Reader {
             }
             let t = extract_value(tv_pair[0].trim()).unwrap();
             let v = extract_value(tv_pair[1].trim()).unwrap();
-            tvs.push((t,v));
+            tvs.push((t, v));
             trace!("time: {:?}, value: {:?}", t, v);
         }
         src.pat = tvs;
@@ -586,11 +576,10 @@ impl Reader {
         src
     }
 
-
     /// Parse an instantiation line
     ///
     /// 2nd last non-`<ident>=<value>` bit is the subcircuit name
-    pub fn extract_instance(&mut self,  bits: &[&str]) -> Instance {
+    pub fn extract_instance(&mut self, bits: &[&str]) -> Instance {
         // If we're here, we know bits[0] starts with 'X'
         // fuckit, we'll just leave the x in the inst name...
         let ident = bits[0];
@@ -628,7 +617,6 @@ impl Reader {
         inst
     }
 
-
     /// Extract a SPICE node identifier from a lump text
     ///
     /// Node identifiers can be integers or strings, e.g. both `69` and
@@ -643,19 +631,18 @@ impl Reader {
     ///
     /// Ground aka `0`, `gnd` or `GND` is a global net.
     fn extract_node(&mut self, text: &str) -> usize {
-
         // is this a well-formed node name?
         let mut well_formed_node_name = true;
         for c in text.chars() {
             match c {
-                '_' | '0'..='9' | 'a'..='z' | 'A'..='Z' => {},
-                _ => { well_formed_node_name = false }
+                '_' | '0'..='9' | 'a'..='z' | 'A'..='Z' => {}
+                _ => well_formed_node_name = false,
             }
         }
         if !well_formed_node_name {
-                println!("*ERROR* bad node name: '{}'", text);
-                self.there_are_errors = true;
-                return 0;
+            println!("*ERROR* bad node name: '{}'", text);
+            self.there_are_errors = true;
+            return 0;
         }
 
         self.ckts[self.c].add_node(text)
@@ -670,7 +657,7 @@ impl Reader {
         if bits.len() != 2 {
             println!("*ERROR* expected <ident>=<expr>");
             self.there_are_errors = true;
-            return None
+            return None;
         }
 
         let name = extract_identifier(bits[0]);
@@ -692,7 +679,7 @@ impl Reader {
         if bits.len() != 2 {
             println!("*ERROR* expected <ident>=<expr>");
             self.there_are_errors = true;
-            return None
+            return None;
         }
 
         let name = extract_identifier(bits[0]);
@@ -710,15 +697,13 @@ impl Reader {
         &mut self,
         bits: &[&str],
         num_ports: usize,
-        min_num_params: usize
-    )
-        -> Option<Instance>
-    {
+        min_num_params: usize,
+    ) -> Option<Instance> {
         trace!("extracting primitive device");
 
         if bits.len() < (1 + num_ports + min_num_params) {
             println!("*ERROR* not enough bits");
-            return None
+            return None;
         }
 
         let ident = extract_identifier(bits[0]);
@@ -749,8 +734,6 @@ impl Reader {
         Some(inst)
     }
 
-
-
     /// Return a circuit that is the expansion of the toplevel circuit
     ///
     /// The toplevel circuit instantiations are resolved with all subcircuit
@@ -759,12 +742,10 @@ impl Reader {
         expander::expand(&self.ckts)
     }
 
-
     /// Return reference to the completed configuration object
     pub fn configuration(&self) -> &Configuration {
         &self.cfg
     }
-
 }
 
 /// Extract an element identifier from SPICE
@@ -772,7 +753,6 @@ impl Reader {
 fn extract_identifier(text: &str) -> String {
     text.to_string()
 }
-
 
 /// Look around for an include or library file.
 ///
@@ -797,7 +777,7 @@ mod tests {
     pub fn assert_nearly(x: f64, expected: f64) {
         const EPSILON: f64 = 1e-9;
         let delta = (x - expected).abs();
-        assert!( delta < EPSILON, "{} isn't approximately {}", x, expected);
+        assert!(delta < EPSILON, "{} isn't approximately {}", x, expected);
     }
 
     // If node count for the expanded circuit goes wrong and the SPICE file hasn't
@@ -817,7 +797,7 @@ mod tests {
     fn simple_read_count_nodes() {
         let mut rdr = Reader::new();
         rdr.read(Path::new("./ngspice/test_reader.spi"));
-//        assert_eq!(rdr.ckts[0].count_nodes(), 9); //  FIXME
+        //        assert_eq!(rdr.ckts[0].count_nodes(), 9); //  FIXME
         assert_eq!(rdr.ckts[0].nodes.len(), 9);
     }
 
@@ -849,7 +829,9 @@ mod tests {
     #[test]
     fn multilevel_subckt_counts() {
         let mut rdr = Reader::new();
-        rdr.read(Path::new("./ngspice/multilevel_subckt_fullwave_rectifier.spi"));
+        rdr.read(Path::new(
+            "./ngspice/multilevel_subckt_fullwave_rectifier.spi",
+        ));
         assert_eq!(rdr.ckts.len(), 4);
 
         assert_eq!(rdr.ckts[0].nodes.len(), 10); // gnd + 3 op pairs + 3 v stack
@@ -869,9 +851,8 @@ mod tests {
 
         // elaborated circuit
         let ckt = rdr.get_expanded_circuit();
-//      assert_eq!(ckt.nodes.len(), 8); // this has aliase
+        //      assert_eq!(ckt.nodes.len(), 8); // this has aliase
         assert_eq!(ckt.node_id_lut.len(), 22); // HARDCODED! 6x 3 + 4
-
     }
 
     #[test]
@@ -901,12 +882,12 @@ mod tests {
 
         // elaborated circuit
         let ckt = rdr.get_expanded_circuit();
-//      assert_eq!(ckt.nodes.len(), 8); // this has aliase
+        //      assert_eq!(ckt.nodes.len(), 8); // this has aliase
         assert_eq!(ckt.node_id_lut.len(), 22); // HARDCODED! 6x 3 + 4
 
         // check if the parameters propagated...
-        assert_nearly(ckt.get_param_value("Xsystem1.Xload.cvalo").unwrap(),   1e-6);
-        assert_nearly(ckt.get_param_value("Xsystem2.Xload.cvalo").unwrap(),  10e-6);
+        assert_nearly(ckt.get_param_value("Xsystem1.Xload.cvalo").unwrap(), 1e-6);
+        assert_nearly(ckt.get_param_value("Xsystem2.Xload.cvalo").unwrap(), 10e-6);
         assert_nearly(ckt.get_param_value("Xsystem3.Xload.cvalo").unwrap(), 100e-6);
     }
 
@@ -916,7 +897,7 @@ mod tests {
         rdr.read(Path::new("./ngspice/v_pwl.spi"));
         assert_eq!(rdr.ckts.len(), 1);
 
-        assert_eq!(rdr.ckts[0].nodes.len(), 5); 
+        assert_eq!(rdr.ckts[0].nodes.len(), 5);
         // voltage sources don't count yet
         assert_eq!(rdr.ckts[0].instances.len(), 0);
         assert_eq!(rdr.ckts[0].elements.len(), 4);
@@ -933,7 +914,7 @@ mod tests {
         rdr.read(Path::new("./ngspice/vc_vs_cs.spi"));
         assert_eq!(rdr.ckts.len(), 1);
 
-        assert_eq!(rdr.ckts[0].nodes.len(), 4); 
+        assert_eq!(rdr.ckts[0].nodes.len(), 4);
         assert_eq!(rdr.ckts[0].instances.len(), 3); // E, G & R
         assert_eq!(rdr.ckts[0].elements.len(), 1); // Vsim
         assert_eq!(rdr.ckts[0].params.len(), 0);
@@ -942,6 +923,4 @@ mod tests {
         let ckt = rdr.get_expanded_circuit();
         assert_eq!(ckt.node_id_lut.len(), 4);
     }
-
-
 }

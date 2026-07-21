@@ -37,18 +37,12 @@
 //! hierarchy name stack and expand that subcircuit into the toplevel
 //! clone.
 
-use crate::element::{Element};
+use crate::circuit::NodeId;
 use crate::circuit::{Circuit, Instance};
-use crate::circuit::{NodeId};
+use crate::element::{Capacitor, Diode, Element, Resistor, Vccs, Vcvs};
 
-use crate::element::resistor::Resistor;
-use crate::element::capacitor::Capacitor;
-use crate::element::diode::Diode;
-
-use crate::element::vdepsrc::{Vcvs, Vccs};
-
+use crate::bracket_expression::Expression;
 use crate::parameter::Parameter;
-use crate::bracket_expression::{Expression};
 
 /// Program execution trace macro - prefix `<expand>`
 macro_rules! trace {
@@ -57,7 +51,6 @@ macro_rules! trace {
         //println!(concat!("<expand> ", $fmt), $($($arg)*)?);
     };
 }
-
 
 /// Expand subcircuits.
 ///
@@ -69,7 +62,6 @@ macro_rules! trace {
 /// Since we don't know the hierarchy of the circuit up-front, this
 /// function kicks off a cascade of recursive calls to `expand_subckt()`.
 pub fn expand(ckts: &[Circuit]) -> Circuit {
-
     let mut ckt = ckts[0].clone();
     let hier: Vec<String> = vec![];
 
@@ -79,17 +71,15 @@ pub fn expand(ckts: &[Circuit]) -> Circuit {
 
     ckt.build_node_id_lut();
     ckt
-
 }
-
 
 /// Expand the instances in the current scope.
 ///
 /// Foreach instance in at this level
 /// 1. Resolve parameter values
 /// 2. either:
-///   2a. `expand_primitive()` or
-///   2b. `expand_subckt()`
+///    2a. `expand_primitive()` or
+///    2b. `expand_subckt()`
 ///
 /// Instances include both primitive circuit element and subcircuits
 fn expand_instances(
@@ -98,11 +88,10 @@ fn expand_instances(
     ckt_id: usize,
     inhier: &[String], // the hierarchy we are working in
 ) {
-
     let mut hier = inhier.to_owned();
 
-//    println!("-- Deal with instances of maybe subcircuits -- {} --",
-//             inhier.len());
+    //    println!("-- Deal with instances of maybe subcircuits -- {} --",
+    //             inhier.len());
     trace!("expand_instances() -> {}", hier.join("."));
 
     // Set up aliases for parameters
@@ -118,7 +107,6 @@ fn expand_instances(
     //   X1.X2.xbb.paramM
 
     for inst in &ckts[ckt_id].instances {
-
         trace!("> inst: '{}' . '{}'", hier.join("."), inst.name);
 
         // resolve the parameters at this level
@@ -131,7 +119,6 @@ fn expand_instances(
         // will pick up a default?
 
         for p in &inst.params {
-
             hier.push(inst.name.to_string()); // inst-name
             hier.push(p.name.to_string()); // param-name
             let param_full_name = hier.join(".");
@@ -141,12 +128,9 @@ fn expand_instances(
             trace!("Resolving param {}", param_full_name);
 
             let param_override = match &p.expr {
-
                 // look for a parameter override that has an expression:
                 // `cval0={cval}`
-                Some(Expression::Literal(val)) => {
-                    Some(*val)
-                },
+                Some(Expression::Literal(val)) => Some(*val),
 
                 Some(Expression::Identifier(ident)) => {
                     // there is an identifier that must be looked up
@@ -163,28 +147,29 @@ fn expand_instances(
                         trace!("Found value for identifier in param");
                         Some(val)
                     } else {
-                        trace!("Can't find identifier '{}' for param '{}'",
-                               lookup_param_name, param_full_name);
+                        trace!(
+                            "Can't find identifier '{}' for param '{}'",
+                            lookup_param_name, param_full_name
+                        );
                         None
                     }
-                },
-
-                _ => {
-                    None
                 }
+
+                _ => None,
             };
 
             if let Some(value) = param_override {
-                trace!("Subckt Parameter Override : {} = {}",
-                       param_full_name, value);
-                ckt.params.push( Parameter {
+                trace!(
+                    "Subckt Parameter Override : {} = {}",
+                    param_full_name, value
+                );
+                ckt.params.push(Parameter {
                     name: param_full_name,
                     defval: None,
                     expr: None,
                     value: Some(value),
                 });
             };
-
         } // for p in parameters
 
         // Make sure we don't leave out any parameters that have defaults
@@ -195,17 +180,20 @@ fn expand_instances(
 
             // find the subckt definition index
             let subckt_id = if let Some(ckt_id) = find_subckt_index(ckts, &inst.subckt) {
-                trace!("Found subcircuit definition: index={}; subckt={}; ident={}",
-                   ckt_id, ckts[ckt_id].name, inst.name);
+                trace!(
+                    "Found subcircuit definition: index={}; subckt={}; ident={}",
+                    ckt_id, ckts[ckt_id].name, inst.name
+                );
                 ckt_id
             } else {
-                println!("*FATAL* Can't find a definition for subcircuit {}",
-                    inst.subckt);
+                println!(
+                    "*FATAL* Can't find a definition for subcircuit {}",
+                    inst.subckt
+                );
                 panic!();
             };
 
             for param_def in &ckts[subckt_id].params {
-
                 hier.push(inst.name.to_string());
                 hier.push(param_def.name.to_string()); // param-name
                 let param_full_name = hier.join(".");
@@ -223,12 +211,9 @@ fn expand_instances(
                 trace!("Need a default from {:?}", param_def);
 
                 let param_default_value = match &param_def.defval {
-
                     // look for a parameter override that has an expression:
                     // `cval0={cval}`
-                    Some(Expression::Literal(val)) => {
-                        Some(*val)
-                    },
+                    Some(Expression::Literal(val)) => Some(*val),
 
                     Some(Expression::Identifier(ident)) => {
                         // there is an identifier that must be looked up
@@ -243,10 +228,9 @@ fn expand_instances(
                             trace!("HHHHHH asdfasdf-asdf HJASDFASDF");
                             Some(val)
                         } else {
-                            panic!("*FATAL* Can't find prim override '{}'",
-                                lookup_param_name);
+                            panic!("*FATAL* Can't find prim override '{}'", lookup_param_name);
                         }
-                    },
+                    }
 
                     _ => {
                         panic!("*FATAL* just can't get enough");
@@ -254,9 +238,8 @@ fn expand_instances(
                 };
 
                 if let Some(value) = param_default_value {
-                    trace!("Subckt Parameter Default : {} = {}",
-                           param_full_name, value);
-                    ckt.params.push( Parameter {
+                    trace!("Subckt Parameter Default : {} = {}", param_full_name, value);
+                    ckt.params.push(Parameter {
                         name: param_full_name,
                         defval: None,
                         expr: None,
@@ -266,14 +249,12 @@ fn expand_instances(
             } // for
         }
 
-
         // now we can expand primitives...
         if inst.subckt == "/device" {
             expand_primitive(ckts, ckt, ckt_id, inst, inhier);
         } else {
             expand_subckt(ckts, ckt, ckt_id, inst, &hier);
         }
-
     } // insts
 }
 
@@ -284,21 +265,24 @@ fn expand_subckt(
     ckt: &mut Circuit,
     host_ckt_id: usize,
     inst: &Instance,
-    inhier: &[String]
+    inhier: &[String],
 ) {
-
     let mut hier = inhier.to_owned();
 
     trace!("expand_subckt() -> '{}' . '{}'", hier.join("."), inst.name);
 
     // find the subckt definition index
     let subckt_id = if let Some(ckt_id) = find_subckt_index(ckts, &inst.subckt) {
-        trace!("Found subcircuit definition: index={}; subckt={}; ident={}",
-           ckt_id, ckts[ckt_id].name, inst.name);
+        trace!(
+            "Found subcircuit definition: index={}; subckt={}; ident={}",
+            ckt_id, ckts[ckt_id].name, inst.name
+        );
         ckt_id
     } else {
-        println!("*FATAL* Can't find a definition for subcircuit {}",
-            inst.subckt);
+        println!(
+            "*FATAL* Can't find a definition for subcircuit {}",
+            inst.subckt
+        );
         panic!();
     };
 
@@ -309,7 +293,6 @@ fn expand_subckt(
         print!("*ERROR* Instantiation and subcircuit definitions ");
         println!("have different port sizes");
     }
-
 
     // Add node aliases for all the ports
     for (n, hnid) in inst.conns.iter().enumerate() {
@@ -341,7 +324,6 @@ fn expand_subckt(
     hier.pop(); // inst-name
 }
 
-
 /// Expand a primitive instantiation
 /// (not recursive)
 //
@@ -367,9 +349,8 @@ fn expand_primitive(
     ckt: &mut Circuit,
     host_ckt_id: usize,
     inst: &Instance,
-    inhier: &[String] // the scope the primitive is instantiated in
+    inhier: &[String], // the scope the primitive is instantiated in
 ) {
-
     let mut hier = inhier.to_owned();
 
     trace!("expand_primitive() -> {} . {}", hier.join("."), inst.name);
@@ -399,7 +380,12 @@ fn expand_primitive(
             panic!("*FATAL* Value for R was not resolved");
         };
 
-        let res = Resistor {ident, a: n[0], b: n[1], value};
+        let res = Resistor {
+            ident,
+            a: n[0],
+            b: n[1],
+            value,
+        };
         ckt.elements.push(Element::R(res));
     } else if inst.name.starts_with('C') {
         trace!("Found a capacitor primitive");
@@ -417,7 +403,12 @@ fn expand_primitive(
             panic!("*FATAL* Value for C was not resolved");
         };
 
-        let cap = Capacitor {ident, a: n[0], b: n[1], value };
+        let cap = Capacitor {
+            ident,
+            a: n[0],
+            b: n[1],
+            value,
+        };
         ckt.elements.push(Element::C(cap));
     } else if inst.name.starts_with('D') {
         trace!("Found a diode primitive");
@@ -445,7 +436,15 @@ fn expand_primitive(
         let v_idx = ckt.v_idx_next;
         ckt.v_idx_next += 1;
 
-        let vcvs = Vcvs {ident, p: n[0], n: n[1], cp: n[2], cn: n[3], k, idx:v_idx };
+        let vcvs = Vcvs {
+            ident,
+            p: n[0],
+            n: n[1],
+            cp: n[2],
+            cn: n[3],
+            k,
+            idx: v_idx,
+        };
         ckt.elements.push(Element::Vcvs(vcvs));
     } else if inst.name.starts_with('G') {
         trace!("Found a vccs primitive");
@@ -475,8 +474,6 @@ fn expand_primitive(
     hier.pop(); // inst-name
 }
 
-
-
 /// Find the index of the subcircuit called `name`.
 ///
 /// `N` is small, so just search the circuit list one by one until
@@ -490,7 +487,6 @@ fn find_subckt_index(ckts: &[Circuit], name: &str) -> Option<usize> {
     None
 }
 
-
 /// Connect a primitive
 fn local_connect(
     ckts: &[Circuit],
@@ -499,7 +495,6 @@ fn local_connect(
     inhier: &[String],
     lnid: NodeId,
 ) -> NodeId {
-
     let mut hier = inhier.to_owned();
 
     let local_node_name = &ckts[host_ckt_id].node_id_lut[&lnid];
@@ -511,5 +506,4 @@ fn local_connect(
     let gnid = ckt.add_node(&node_name);
     trace!("Primitive connection: '{}' -> {}", node_name, gnid);
     gnid
-
 }

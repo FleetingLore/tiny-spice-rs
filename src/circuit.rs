@@ -1,20 +1,19 @@
 //! Datastructures for describing a Circuit
-use std::fmt;
 use std::collections::HashMap;
+use std::fmt;
 
 pub use crate::parameter::Parameter;
 
-pub use crate::element::Element;
-pub use crate::element::diode::Diode;
-pub use crate::element::isine::CurrentSourceSine;
-pub use crate::element::vsine::VoltageSourceSine;
-pub use crate::element::capacitor::Capacitor;
-pub use crate::element::resistor::Resistor;
-pub use crate::element::independent::CurrentSource;
-pub use crate::element::independent::VoltageSource;
-pub use crate::element::vpwl::VoltageSourcePwl;
-pub use crate::element::vdepsrc::{Vcvs, Vccs};
-
+use crate::element::Element;
+use crate::element::capacitor::Capacitor;
+use crate::element::diode::Diode;
+use crate::element::independent::CurrentSource;
+use crate::element::independent::VoltageSource;
+use crate::element::isine::CurrentSourceSine;
+use crate::element::resistor::Resistor;
+use crate::element::vdepsrc::{Vccs, Vcvs};
+use crate::element::vpwl::VoltageSourcePwl;
+use crate::element::vsine::VoltageSourceSine;
 
 /// Program execution trace macro - prefix `<circuit>`
 macro_rules! trace {
@@ -24,19 +23,17 @@ macro_rules! trace {
     };
 }
 
-
 /// Physical Constant: Boltzman
-pub const BOLTZMANN : f64 = 1.380_648_8e-23;
+pub const BOLTZMANN: f64 = 1.380_648_8e-23;
 
 /// Physical Constant: Charge of an Electron
-pub const CHARGE : f64 = 1.603e-19;
+pub const CHARGE: f64 = 1.603e-19;
 
 /// Simulator Constant: Minimum Impedance between Nodes
-pub const GMIN : f64 = 1.0e-12;
+pub const GMIN: f64 = 1.0e-12;
 
 /// Index of a node in the matrix
 pub type NodeId = usize;
-
 
 /// Subcircuit Instantiation
 #[derive(Clone)]
@@ -48,7 +45,6 @@ pub struct Instance {
 }
 
 impl Instance {
-
     pub fn new(name: &str, subckt: &str) -> Self {
         Instance {
             name: String::from(name),
@@ -65,16 +61,17 @@ impl Instance {
     pub fn add_parameter(&mut self, param: &Parameter) {
         self.params.push(param.clone());
     }
-
 }
 
 impl fmt::Display for Instance {
-    fn fmt (&self, f:&mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // I can't do a node-name lookup here yet as the LUT is only
         // build at the end of a read...
-        write!(f, "Inst '{}' of subcircuit '{}' has:\n connections {:?}\n parameters {:?}",
-            self.name, self.subckt,
-            self.conns, self.params)
+        write!(
+            f,
+            "Inst '{}' of subcircuit '{}' has:\n connections {:?}\n parameters {:?}",
+            self.name, self.subckt, self.conns, self.params
+        )
     }
 }
 
@@ -93,7 +90,6 @@ pub struct Circuit {
 }
 
 impl Circuit {
-
     /// Initialise a new circuit description
     pub fn new() -> Circuit {
         let mut nodes = HashMap::new();
@@ -142,7 +138,6 @@ impl Circuit {
 
     /// Count the nodes in the circuit
     pub fn count_nodes(&self) -> usize {
-
         // number of nodes in the circuit - there is always at least ground
         let mut c_nodes: usize = 1;
 
@@ -150,124 +145,136 @@ impl Circuit {
         seen[0] = true; // always a ground
 
         for el in &self.elements {
-                match *el {
-                    Element::I(CurrentSource{ ref p, ref n, .. }) => {
-                        if !seen[*p] {
-                            seen[*p] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*n] {
-                            seen[*n] = true;
-                            c_nodes += 1;
-                        }
+            match *el {
+                Element::I(CurrentSource { ref p, ref n, .. }) => {
+                    if !seen[*p] {
+                        seen[*p] = true;
+                        c_nodes += 1;
                     }
-                    Element::R(Resistor{ ref a, ref b, .. }) => {
-                        if !seen[*a] {
-                            seen[*a] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*b] {
-                            seen[*b] = true;
-                            c_nodes += 1;
-                        }
-                    }
-                    Element::V(VoltageSource{ ref p, ref n, .. }) => {
-                        if !seen[*p] {
-                            seen[*p] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*n] {
-                            seen[*n] = true;
-                            c_nodes += 1;
-                        }
-                    }
-                    Element::D(Diode{ ref p, ref n, .. }) => {
-                        if !seen[*p] {
-                            seen[*p] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*n] {
-                            seen[*n] = true;
-                            c_nodes += 1;
-                        }
-                    }
-                    Element::Isin(CurrentSourceSine{ ref p, ref n, .. }) => {
-                        if !seen[*p] {
-                            seen[*p] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*n] {
-                            seen[*n] = true;
-                            c_nodes += 1;
-                        }
-                    }
-                    Element::Vsin(VoltageSourceSine{ ref p, ref n, .. }) => {
-                        if !seen[*p] {
-                            seen[*p] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*n] {
-                            seen[*n] = true;
-                            c_nodes += 1;
-                        }
-                    }
-                    Element::C(Capacitor{ ref a, ref b, .. }) => {
-                        if !seen[*a] {
-                            seen[*a] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*b] {
-                            seen[*b] = true;
-                            c_nodes += 1;
-                        }
-                    }
-                    Element::Vpwl(VoltageSourcePwl{ ref p, ref n, ..}) => {
-                        if !seen[*p] {
-                            seen[*p] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*n] {
-                            seen[*n] = true;
-                            c_nodes += 1;
-                        }
-                    }
-                    Element::Vcvs(Vcvs{ ref p, ref n, ref cp, ref cn, ..}) => {
-                        if !seen[*p] {
-                            seen[*p] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*n] {
-                            seen[*n] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*cp] {
-                            seen[*cp] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*cn] {
-                            seen[*cn] = true;
-                            c_nodes += 1;
-                        }
-                    }
-                    Element::Vccs(Vccs{ ref p, ref n, ref cp, ref cn, ..}) => {
-                        if !seen[*p] {
-                            seen[*p] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*n] {
-                            seen[*n] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*cp] {
-                            seen[*cp] = true;
-                            c_nodes += 1;
-                        }
-                        if !seen[*cn] {
-                            seen[*cn] = true;
-                            c_nodes += 1;
-                        }
+                    if !seen[*n] {
+                        seen[*n] = true;
+                        c_nodes += 1;
                     }
                 }
+                Element::R(Resistor { ref a, ref b, .. }) => {
+                    if !seen[*a] {
+                        seen[*a] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*b] {
+                        seen[*b] = true;
+                        c_nodes += 1;
+                    }
+                }
+                Element::V(VoltageSource { ref p, ref n, .. }) => {
+                    if !seen[*p] {
+                        seen[*p] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*n] {
+                        seen[*n] = true;
+                        c_nodes += 1;
+                    }
+                }
+                Element::D(Diode { ref p, ref n, .. }) => {
+                    if !seen[*p] {
+                        seen[*p] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*n] {
+                        seen[*n] = true;
+                        c_nodes += 1;
+                    }
+                }
+                Element::Isin(CurrentSourceSine { ref p, ref n, .. }) => {
+                    if !seen[*p] {
+                        seen[*p] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*n] {
+                        seen[*n] = true;
+                        c_nodes += 1;
+                    }
+                }
+                Element::Vsin(VoltageSourceSine { ref p, ref n, .. }) => {
+                    if !seen[*p] {
+                        seen[*p] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*n] {
+                        seen[*n] = true;
+                        c_nodes += 1;
+                    }
+                }
+                Element::C(Capacitor { ref a, ref b, .. }) => {
+                    if !seen[*a] {
+                        seen[*a] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*b] {
+                        seen[*b] = true;
+                        c_nodes += 1;
+                    }
+                }
+                Element::Vpwl(VoltageSourcePwl { ref p, ref n, .. }) => {
+                    if !seen[*p] {
+                        seen[*p] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*n] {
+                        seen[*n] = true;
+                        c_nodes += 1;
+                    }
+                }
+                Element::Vcvs(Vcvs {
+                    ref p,
+                    ref n,
+                    ref cp,
+                    ref cn,
+                    ..
+                }) => {
+                    if !seen[*p] {
+                        seen[*p] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*n] {
+                        seen[*n] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*cp] {
+                        seen[*cp] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*cn] {
+                        seen[*cn] = true;
+                        c_nodes += 1;
+                    }
+                }
+                Element::Vccs(Vccs {
+                    ref p,
+                    ref n,
+                    ref cp,
+                    ref cn,
+                    ..
+                }) => {
+                    if !seen[*p] {
+                        seen[*p] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*n] {
+                        seen[*n] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*cp] {
+                        seen[*cp] = true;
+                        c_nodes += 1;
+                    }
+                    if !seen[*cn] {
+                        seen[*cn] = true;
+                        c_nodes += 1;
+                    }
+                }
+            }
         }
         c_nodes
     }
@@ -276,24 +283,23 @@ impl Circuit {
     ///
     /// Counts both `V` and `VSIN`.
     pub fn count_voltage_sources(&self) -> usize {
-
         // number of voltage sources in the circuit
         let mut c_vsrc: usize = 0;
 
         for el in &self.elements {
             match *el {
-                Element::V(VoltageSource{..}) => {
-                        c_vsrc += 1;
-                },
-                Element::Vsin(VoltageSourceSine{..}) => {
-                        c_vsrc += 1;
-                },
-                Element::Vpwl(VoltageSourcePwl{..}) => {
-                        c_vsrc += 1;
-                },
-                Element::Vcvs(Vcvs{..}) => {
-                        c_vsrc += 1;
-                },
+                Element::V(VoltageSource { .. }) => {
+                    c_vsrc += 1;
+                }
+                Element::Vsin(VoltageSourceSine { .. }) => {
+                    c_vsrc += 1;
+                }
+                Element::Vpwl(VoltageSourcePwl { .. }) => {
+                    c_vsrc += 1;
+                }
+                Element::Vcvs(Vcvs { .. }) => {
+                    c_vsrc += 1;
+                }
                 _ => {}
             }
         }
@@ -302,9 +308,8 @@ impl Circuit {
 
     /// Add DC current source
     pub fn add_i(&mut self, p: NodeId, n: NodeId, value: f64) {
-        self.elements.push(
-            Element::I(CurrentSource{p, n, value})
-        );
+        self.elements
+            .push(Element::I(CurrentSource { p, n, value }));
     }
 
     /// Add AC current source
@@ -328,36 +333,36 @@ impl Circuit {
         self.v_idx_next += 1;
     }
 
-
     /// Add DC voltage source
     pub fn add_v(&mut self, p: NodeId, n: NodeId, value: f64) {
-        self.elements.push(
-            Element::V(VoltageSource{p, n, value, idx:self.v_idx_next})
-        );
+        self.elements.push(Element::V(VoltageSource {
+            p,
+            n,
+            value,
+            idx: self.v_idx_next,
+        }));
         self.v_idx_next += 1;
     }
 
     /// Add resistor
     pub fn add_r(&mut self, ident: String, a: NodeId, b: NodeId, value: f64) {
-        self.elements.push(
-            Element::R(Resistor{ident, a, b, value})
-        );
+        self.elements
+            .push(Element::R(Resistor { ident, a, b, value }));
     }
 
     /// Add capacitor
     pub fn add_c(&mut self, ident: String, a: NodeId, b: NodeId, value: f64) {
-        self.elements.push(
-            Element::C(Capacitor{ident, a, b, value})
-        );
+        self.elements
+            .push(Element::C(Capacitor { ident, a, b, value }));
     }
 
     /// Add diode
-    pub fn add_d(&mut self, d:Diode) {
+    pub fn add_d(&mut self, d: Diode) {
         self.elements.push(Element::D(d));
     }
 
     /// Add an instantiation
-    pub fn add_instance(&mut self, inst:Instance) {
+    pub fn add_instance(&mut self, inst: Instance) {
         self.instances.push(inst)
     }
 
@@ -375,35 +380,27 @@ impl Circuit {
         }
     }
 
-
     /// add a node alias
     pub fn add_node_alias(&mut self, name: &str, nid: NodeId) {
-
         trace!("Add node alias '{}' with id {}", name, nid);
-        if let Some(node_id) = self.get_node_id(name) {
-            if node_id != nid {
-                println!("*ERROR* Can't add a node alias for a nonexisting NodeId");
-                panic!();
-            }
+        if let Some(node_id) = self.get_node_id(name)
+            && node_id != nid
+        {
+            println!("*ERROR* Can't add a node alias for a nonexisting NodeId");
+            panic!();
         }
         self.nodes.insert(String::from(name), nid);
     }
 
-
     /// Look up the `NodeId` for a node name
     pub fn get_node_id(&self, name: &str) -> Option<NodeId> {
-    
         // Node name might be hierarchical. We look for an alias
         // of ground in the last bit.
         let endbit = name.rsplit_once('.');
-        let localname = if let Some(bit) = endbit {
-            bit.1
-        } else {
-            name
-        };
+        let localname = if let Some(bit) = endbit { bit.1 } else { name };
         match localname {
             "gnd" | "GND" | "0" => Some(0),
-            _ => self.nodes.get(name).copied()
+            _ => self.nodes.get(name).copied(),
         }
     }
 
@@ -421,10 +418,9 @@ impl Circuit {
     pub fn get_param_value(&self, name: &str) -> Option<f64> {
         for p in &self.params {
             if p.name == name {
-                return p.value
+                return p.value;
             }
         }
         None
     }
-
 }

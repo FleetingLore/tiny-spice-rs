@@ -1,0 +1,15 @@
+[book]
+title = "Tiny-SPICE 文档"
+description = "微型 SPICE 电路仿真器 —— 架构、算法与测试用例"
+authors = ["Tiny-SPICE Contributors"]
+language = "zh-CN"
+
+[build]
+build-dir = "book"
+
+[output.html]
+mathjax-support = true
+
+[output.html.fold]
+enable = true
+level = 1

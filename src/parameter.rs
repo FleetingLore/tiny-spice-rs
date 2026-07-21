@@ -1,6 +1,6 @@
 //! Parameters
 
-use crate::bracket_expression::{Expression};
+use crate::bracket_expression::Expression;
 
 /// Parameter
 #[derive(Clone, Debug)]
@@ -12,14 +12,13 @@ pub struct Parameter {
 }
 
 impl Parameter {
-
     /// goes in `expr`
     pub fn override_from_expression(name: &str, expr: &Expression) -> Self {
         Parameter {
             name: name.to_string(),
             defval: None,
             expr: Some(expr.clone()),
-            value: None
+            value: None,
         }
     }
 
@@ -29,9 +28,7 @@ impl Parameter {
             name: name.to_string(),
             defval: Some(expr.clone()),
             expr: None,
-            value: None
+            value: None,
         }
     }
-
 }
-

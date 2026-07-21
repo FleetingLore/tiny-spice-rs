@@ -1,14 +1,14 @@
 extern crate tiny_spice;
 
-use tiny_spice::circuit;
-use tiny_spice::engine;
 use tiny_spice::analysis;
+use tiny_spice::circuit;
+use tiny_spice::element;
+use tiny_spice::engine;
 
 mod common;
 
 #[test]
 fn trans_ir() {
-
     let mut eng = engine::Engine::new();
     let mut cfg = analysis::Configuration::new();
 
@@ -18,24 +18,28 @@ fn trans_ir() {
     let ckt = build();
     let stats = eng.transient_analysis(&ckt, &cfg);
     println!("\n*INFO* Done");
-    
+
     assert!(stats.end >= cfg.TSTOP);
 }
-
 
 fn build() -> circuit::Circuit {
     let mut ckt = circuit::Circuit::new();
 
     ckt.add_node("1");
 
-    ckt.elements.push(
-        circuit::Element::I(circuit::CurrentSource{p: 0, n: 1, value: 3.0}),
-    );
-    ckt.elements.push(
-        circuit::Element::R(circuit::Resistor{ident: "r1".to_string(), a: 1, b: 0, value: 10.0}),
-    );
+    ckt.elements
+        .push(element::Element::I(element::CurrentSource {
+            p: 0,
+            n: 1,
+            value: 3.0,
+        }));
+    ckt.elements.push(element::Element::R(element::Resistor {
+        ident: "r1".to_string(),
+        a: 1,
+        b: 0,
+        value: 10.0,
+    }));
 
     ckt.build_node_id_lut();
     ckt
 }
-

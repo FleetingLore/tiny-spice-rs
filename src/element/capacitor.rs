@@ -1,6 +1,8 @@
 //! Capacitor Implementation
 
-use crate::circuit::{NodeId};
+use std::fmt;
+
+use crate::circuit::NodeId;
 
 #[derive(Clone)]
 pub struct Capacitor {
@@ -11,7 +13,6 @@ pub struct Capacitor {
 }
 
 impl Capacitor {
-
     pub fn new(ident: &str, a: NodeId, b: NodeId, value: f64) -> Capacitor {
         Capacitor {
             ident: ident.to_string(),
@@ -33,6 +34,14 @@ impl Capacitor {
     pub fn get_value(&self) -> f64 {
         0.0
     }
-
 }
 
+impl fmt::Display for Capacitor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "C a:{} b:{} {} Farads ({})",
+            self.a, self.b, self.value, self.ident
+        )
+    }
+}

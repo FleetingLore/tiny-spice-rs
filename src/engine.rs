@@ -4,6 +4,7 @@
 
 use crate::analysis;
 use crate::circuit;
+use crate::element;
 use crate::wavewriter::WaveWriter;
 
 /// Program execution trace macro - prefix `<engine>`
@@ -15,13 +16,11 @@ macro_rules! trace {
 }
 
 fn banner() {
-
     println!("**********************************************");
     println!("***          Tiny-SPICE-Simulator          ***");
     println!("***       (c) CrapCadCorp 2017-2023        ***");
     println!("*** No Patents Pending, No rights reserved ***");
     println!("**********************************************");
-
 }
 
 #[derive(Debug)]
@@ -31,11 +30,9 @@ pub enum ConvergenceError {
 
 pub type ConvergenceResult = Result<bool, ConvergenceError>;
 
-
 #[derive(Default)]
 #[allow(non_snake_case)]
 pub struct Engine {
-
     // Number of voltage nodes in the circuit
     c_nodes: usize,
 
@@ -47,24 +44,22 @@ pub struct Engine {
     base_matrix: Vec<Vec<f64>>,
 
     // list of nonlinear elements in the circuit
-    nonlinear_elements: Vec<circuit::Element>,
+    nonlinear_elements: Vec<element::Element>,
 
     // list of independent sources
-    independent_sources: Vec<circuit::Element>,
+    independent_sources: Vec<element::Element>,
 
     // list of voltage-dependent sources
-    v_dependent_sources: Vec<circuit::Element>,
+    v_dependent_sources: Vec<element::Element>,
 
     // list of elements with energy storage (caps & inductors)
-    storage_elements: Vec<circuit::Element>,
+    storage_elements: Vec<element::Element>,
 
     // DC operating point
     dc_op: Vec<f64>,
-
 }
 
 impl Engine {
-
     pub fn new() -> Engine {
         banner();
         Engine {
@@ -112,72 +107,70 @@ impl Engine {
         }
     }
 
-/*
-    // need to know which element to sweep
-    pub fn dc_sweep(
-        &mut self,
-        ckt: &circuit::Circuit,
-        cfg: &analysis::Configuration,
-    ) {
-        const VSTART: f64 = -3.0;
-        const VSTOP: f64 = 5.0;
-        const VSTEPS: usize = 100;
+    /*
+        // need to know which element to sweep
+        pub fn dc_sweep(
+            &mut self,
+            ckt: &circuit::Circuit,
+            cfg: &analysis::Configuration,
+        ) {
+            const VSTART: f64 = -3.0;
+            const VSTOP: f64 = 5.0;
+            const VSTEPS: usize = 100;
 
-        let v_step = (VSTOP - VSTART) / VSTEPS as f64;
+            let v_step = (VSTOP - VSTART) / VSTEPS as f64;
 
-        self.elaborate(&ckt);
+            self.elaborate(&ckt);
 
-        // announce
-        println!("*************************************************************");
-        println!("DC Sweep: {} to {} by {}", VSTART, VSTOP, v_step);
+            // announce
+            println!("*************************************************************");
+            println!("DC Sweep: {} to {} by {}", VSTART, VSTOP, v_step);
 
-        // open waveform database
-        let mut wavedb = WaveWriter::new(&cfg.wavefile).unwrap();
-        wavedb.header(self.c_nodes, self.c_vsrcs);
+            // open waveform database
+            let mut wavedb = WaveWriter::new(&cfg.wavefile).unwrap();
+            wavedb.header(self.c_nodes, self.c_vsrcs);
 
-        // FUCK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // have to stamp this all the time
-        // FIXCasdfkj disf=
-        //0]
-        //
+            // FUCK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // have to stamp this all the time
+            // FIXCasdfkj disf=
+            //0]
+            //
 
-        // FIXME very fragile - what if there's more than one voltage source in
-        // the design?
-        let idx_vsrc : usize = self.c_nodes; // index, not amperage...
+            // FIXME very fragile - what if there's more than one voltage source in
+            // the design?
+            let idx_vsrc : usize = self.c_nodes; // index, not amperage...
 
-        // tweak the thing we're sweeping
-        for s in 0..VSTEPS {
-            let v_sweep = VSTART + (v_step * s as f64);
-            //let self.
+            // tweak the thing we're sweeping
+            for s in 0..VSTEPS {
+                let v_sweep = VSTART + (v_step * s as f64);
+                //let self.
 
-            let mut mna = self.base_matrix.clone();
+                let mut mna = self.base_matrix.clone();
 
-            // unstamp the voltage source
-            // FIXME - assume it's 0V
-            let v_src = circuit::VoltageSource{
-                p: 1,
-                n: 0,
-                value: v_sweep,
-            };
+                // unstamp the voltage source
+                // FIXME - assume it's 0V
+                let v_src = element::VoltageSource{
+                    p: 1,
+                    n: 0,
+                    value: v_sweep,
+                };
 
-            self.stamp_voltage_source(&mut mna, &v_src, idx_vsrc);
-            
-            let _stats = self.dc_solve(&mna, &cfg);
-            wavedb.dump_vector(v_sweep, &self.dc_op);
+                self.stamp_voltage_source(&mut mna, &v_src, idx_vsrc);
+
+                let _stats = self.dc_solve(&mna, &cfg);
+                wavedb.dump_vector(v_sweep, &self.dc_op);
+
+            }
 
         }
+    */
 
-    }
-*/
-
+    #[allow(unused_assignments)]
     pub fn transient_analysis(
         &mut self,
         ckt: &circuit::Circuit,
         cfg: &analysis::Configuration,
-    ) 
-    -> analysis::Statistics
-    {
-
+    ) -> analysis::Statistics {
         // Find the DC operating point
         // used as the initial values in the transient simulation
         // this will also build the circuit
@@ -188,7 +181,7 @@ impl Engine {
 
         // prep values
         let c_mna = self.c_nodes + self.c_vsrcs;
-        let mut unknowns_prev : Vec<f64> = vec![0.0; c_mna];
+        let mut unknowns_prev: Vec<f64> = vec![0.0; c_mna];
 
         // transient loop
         let mut t_delta = cfg.TSTEP * cfg.FS;
@@ -198,8 +191,10 @@ impl Engine {
         // announce
         println!("*************************************************************");
         println!("*CONFIG* TRANSIENT ANALYSIS");
-        println!("*CONFIG* TIME {} to {} by {:0.12}",
-                 cfg.TSTART, cfg.TSTOP, cfg.TSTEP);
+        println!(
+            "*CONFIG* TIME {} to {} by {:0.12}",
+            cfg.TSTART, cfg.TSTOP, cfg.TSTEP
+        );
         println!("*************************************************************");
 
         // open waveform database
@@ -213,7 +208,6 @@ impl Engine {
         let mut c_step = 0; // goes away with empty trace!
         let mut c_iteration: usize = 0;
         loop {
-
             // At the start of the loop, we've a candidate t_delta to solve on.
             // This comes from either:
             // * the initial calculation after DC on the initial iteration
@@ -228,7 +222,6 @@ impl Engine {
                 break;
             }
 
-
             // solver loop
             // breaks when solved, or time-step too small
 
@@ -237,16 +230,17 @@ impl Engine {
 
             // solver iteration count
             let mut c_itl: usize = 0;
-            let mut unknowns_solve : Vec<f64> = vec![0.0; c_mna];
-            let mut unknowns_solve_prev : Vec<f64> = vec![0.0; c_mna];
+            let mut unknowns_solve: Vec<f64> = vec![0.0; c_mna];
+            let mut unknowns_solve_prev: Vec<f64> = vec![0.0; c_mna];
             let mut geared = false;
 
-            let mut _mse :f64 = 0.0; // not used if trace! is empty
+            let mut _mse: f64 = 0.0; // not used if trace! is empty
 
             loop {
-
-                trace!("*METRIC* {} {} {} {} {} {}",
-                         c_step, t_now, t_delta, c_iteration, c_itl, _mse);
+                trace!(
+                    "*METRIC* {} {} {} {} {} {}",
+                    c_step, t_now, t_delta, c_iteration, c_itl, _mse
+                );
 
                 // copy the base matrix, cos we're going to change it a lot:
                 // * stamp nonlinear element companion models
@@ -300,12 +294,12 @@ impl Engine {
                                 }
                             }
                         }
-                    },
+                    }
                     Err(_) => {
                         println!("*ERROR* There was a numerical error");
                         error = true;
                         break;
-                    },
+                    }
                 }
                 unknowns_solve_prev = unknowns_solve.to_vec();
                 unknowns_solve = unknowns.to_vec();
@@ -334,7 +328,6 @@ impl Engine {
             if t_now > cfg.TSTOP {
                 t_now = cfg.TSTOP;
                 is_final_timestep = true;
-
             } // solver
 
             // break out of this loop if an error was detected
@@ -352,28 +345,24 @@ impl Engine {
         }
     }
 
-
     // assume circuit has been elaborated
     fn dc_solve(
         &mut self,
         mna: &[Vec<f64>],
         cfg: &analysis::Configuration,
-    )
-        -> analysis::Statistics
-    {
-
+    ) -> analysis::Statistics {
         // prep values for convergence checks
         let c_mna = self.c_nodes + self.c_vsrcs;
-        let mut unknowns_prev : Vec<f64> = vec![0.0; c_mna];
-        let mut unknowns_prev_prev : Vec<f64> = vec![0.0; c_mna];
-        let mut unknowns : Vec<f64> = vec![];
+        let mut unknowns_prev: Vec<f64> = vec![0.0; c_mna];
+        let mut unknowns_prev_prev: Vec<f64> = vec![0.0; c_mna];
+        let mut unknowns: Vec<f64> = vec![];
 
         let mut converged = false;
 
         // Newton-Raphson loop
         let mut c_iteration: usize = 0;
 
-        while c_iteration < (cfg.ITL1+1) {
+        while c_iteration < (cfg.ITL1 + 1) {
             c_iteration += 1;
 
             // copy the base matrix, cos we're going to change it a lot:
@@ -407,11 +396,11 @@ impl Engine {
                             converged = true;
                             break;
                         }
-                    },
+                    }
                     Err(_) => {
                         println!("*ERROR* math gone bad during DC solve");
                         break;
-                    },
+                    }
                 }
             }
 
@@ -419,7 +408,6 @@ impl Engine {
             unknowns_prev_prev = unknowns_prev.clone();
             unknowns_prev = unknowns.clone();
         }
-
 
         if converged {
             trace!(" [CONVERGE] Converged after {} iterations", c_iteration);
@@ -437,16 +425,11 @@ impl Engine {
         stats
     }
 
-
-
     pub fn dc_operating_point(
         &mut self,
         ckt: &circuit::Circuit,
         cfg: &analysis::Configuration,
-    )
-        -> analysis::Statistics
-    {
-
+    ) -> analysis::Statistics {
         // build the circuit matrix
         self.elaborate(ckt);
 
@@ -455,7 +438,6 @@ impl Engine {
         self.dc_solve(&mna, cfg)
     }
 
-
     /// Look at the circuit, and initialise linear version of the matrix
     fn elaborate(&mut self, ckt: &circuit::Circuit) {
         // assume here that nodes have been indexed 0 -> N-1
@@ -463,11 +445,17 @@ impl Engine {
 
         // Number of nodes, including ground (aka 0, aka gnd)
         self.c_nodes = ckt.count_nodes();
-        println!("*INFO* There are {} nodes in the design, including ground", self.c_nodes);
+        println!(
+            "*INFO* There are {} nodes in the design, including ground",
+            self.c_nodes
+        );
 
         // Number of voltage sources in the design
         self.c_vsrcs = ckt.count_voltage_sources();
-        println!("*INFO* There are {} voltage sources in the design", self.c_vsrcs);
+        println!(
+            "*INFO* There are {} voltage sources in the design",
+            self.c_vsrcs
+        );
 
         trace!("Building Voltage Node Matrix and Current Vector");
 
@@ -478,7 +466,7 @@ impl Engine {
         // not known at compile time. Makes sense, I suppose - could blow the stack if
         // c_nodes is any way huge.
         // [ V I ]
-        let mut m = vec![ vec![0.0; c_mna+1]; c_mna]; // +1 for currents
+        let mut m = vec![vec![0.0; c_mna + 1]; c_mna]; // +1 for currents
 
         // Fill up the voltage node and current vector
         // This needs to know about each of the kinds of circuit elements, so
@@ -488,86 +476,75 @@ impl Engine {
                 // From NGSPICE manual:
                 // Positive current is assumed to flow from the positive node,
                 // through the source, to the negative node.
-                // A current source of positive value forces current to flow 
+                // A current source of positive value forces current to flow
                 // out of the n+ node, through the source, and into the n- node.
-                circuit::Element::I(ref isrc) => {
+                element::Element::I(ref isrc) => {
                     self.stamp_current_source(&mut m, isrc);
                 }
 
-                circuit::Element::R(ref r) => {
+                element::Element::R(ref r) => {
                     self.stamp_resistor(&mut m, r);
                 }
 
-                circuit::Element::V(ref vsrc) => {
+                element::Element::V(ref vsrc) => {
                     self.stamp_voltage_source(&mut m, vsrc);
                 }
 
-                circuit::Element::D(ref d) => {
+                element::Element::D(ref d) => {
                     trace!("  [ELEMENT] Diode:");
-                    self.nonlinear_elements.push(
-                        circuit::Element::D(d.clone())
-                    );
+                    self.nonlinear_elements.push(element::Element::D(d.clone()));
                 }
 
-                circuit::Element::Isin(ref isrcsine) => {
+                element::Element::Isin(ref isrcsine) => {
                     trace!("  [ELEMENT] Current Source (~):");
-                    self.independent_sources.push(
-                        circuit::Element::Isin(isrcsine.clone())
-                    );
+                    self.independent_sources
+                        .push(element::Element::Isin(isrcsine.clone()));
                 }
 
-                circuit::Element::Vsin(ref vsrcsine) => {
+                element::Element::Vsin(ref vsrcsine) => {
                     trace!("  [ELEMENT] Voltage Source (~):");
-                    self.independent_sources.push(
-                        circuit::Element::Vsin(vsrcsine.clone())
-                    );
+                    self.independent_sources
+                        .push(element::Element::Vsin(vsrcsine.clone()));
                 }
 
-                circuit::Element::C(ref c) => {
+                element::Element::C(ref c) => {
                     trace!("  [ELEMENT] Capacitor:");
-                    self.storage_elements.push(
-                        circuit::Element::C(c.clone())
-                    );
+                    self.storage_elements.push(element::Element::C(c.clone()));
                 }
 
-                circuit::Element::Vpwl(ref vpwl) => {
+                element::Element::Vpwl(ref vpwl) => {
                     trace!("  [ELEMENT] PWL Voltage Source:");
-                    self.independent_sources.push(
-                        circuit::Element::Vpwl(vpwl.clone())
-                    );
+                    self.independent_sources
+                        .push(element::Element::Vpwl(vpwl.clone()));
                 }
 
-                circuit::Element::Vcvs(ref vcvs) => {
+                element::Element::Vcvs(ref vcvs) => {
                     trace!("  [ELEMENT] VCVS:");
-                    self.v_dependent_sources.push(
-                        circuit::Element::Vcvs(vcvs.clone())
-                    );
+                    self.v_dependent_sources
+                        .push(element::Element::Vcvs(vcvs.clone()));
                 }
 
-                circuit::Element::Vccs(ref vccs) => {
+                element::Element::Vccs(ref vccs) => {
                     trace!("  [ELEMENT] VCCS:");
-                    self.v_dependent_sources.push(
-                        circuit::Element::Vccs(vccs.clone())
-                    );
+                    self.v_dependent_sources
+                        .push(element::Element::Vccs(vccs.clone()));
                 }
-                
             }
         }
         self.base_matrix = m.to_vec();
         self.pp_matrix(&self.base_matrix);
-
     }
 
     // Solve the system of linear equations
     fn solve(&self, mut v: Vec<Vec<f64>>) -> Vec<f64> {
-
         let c_mna = self.c_nodes + self.c_vsrcs;
         let ia = c_mna; // index for ampere vector
 
         // Gaussian elimination with partial pivoting
         // https://en.wikipedia.org/wiki/Gaussian_elimination#Pseudocode
         trace!("*INFO* Gaussian Elimination");
-        for r_ref in 1..c_mna-1 { // column we're eliminating, but index rows
+        for r_ref in 1..c_mna - 1 {
+            // column we're eliminating, but index rows
 
             // find the k-th pivot
             let r_max = self.index_of_next_abs(&v, r_ref);
@@ -585,17 +562,20 @@ impl Engine {
                 continue;
             }
 
-            for r_mod in r_ref+1..c_mna { // row we're scaling
+            for r_mod in r_ref + 1..c_mna {
+                // row we're scaling
                 if v[r_mod][r_ref] == 0.0 {
                     //println!("Skipping v[{}][{}]", r_mod, r_ref);
                     continue;
                 }
                 let ratio = v[r_mod][r_ref] / v[r_ref][r_ref];
 
-                for c_mod in r_ref..=c_mna { // column we're scaling
+                #[allow(clippy::needless_range_loop)]
+                for c_mod in r_ref..=c_mna {
+                    // column we're scaling
                     let val = v[r_mod][c_mod];
                     let wiggle = v[r_ref][c_mod];
-                    let new = val - (wiggle * ratio); 
+                    let new = val - (wiggle * ratio);
                     v[r_mod][c_mod] = new;
                     //println!("\nr_ref = {}, r_mod = {}, c_mod = {}, ratio = {}",
                     //         r_ref, r_mod, c_mod, ratio);
@@ -607,7 +587,7 @@ impl Engine {
         }
         //println!("\n*INFO* Final Matrix");
         //self.pp_matrix(&v);
-      
+
         // TODO check result
 
         trace!("*INFO* Back-substitution");
@@ -626,22 +606,20 @@ impl Engine {
         }
 
         // Solve the rest recursively
-        for i_solve in (1..c_mna-1).rev() {
+        for i_solve in (1..c_mna - 1).rev() {
             let mut sum = 0.0;
             #[allow(clippy::needless_range_loop)]
-            for i_term in i_solve+1..c_mna {
+            for i_term in i_solve + 1..c_mna {
                 sum += v[i_solve][i_term] * n[i_term];
                 //println!("[{:3}]  {} * {}",  i_solve, v[i_solve][i_term], n[i_term]);
-
             }
-            n[i_solve] = ( v[i_solve][ia] - sum ) / v[i_solve][i_solve];
-            //println!("*INFO* {} - {} / {} = {}", 
+            n[i_solve] = (v[i_solve][ia] - sum) / v[i_solve][i_solve];
+            //println!("*INFO* {} - {} / {} = {}",
             //        v[i_solve][ia], sum,
             //        v[i_solve][i_solve],
             //        n[i_solve]
             //);
         }
-
 
         trace!(" [SOLVE] Results");
         #[allow(clippy::needless_range_loop, unused_variables)]
@@ -650,15 +628,14 @@ impl Engine {
         }
 
         #[allow(clippy::needless_range_loop, unused_variables)]
-        for i_res in self.c_nodes..self.c_nodes+self.c_vsrcs {
+        for i_res in self.c_nodes..self.c_nodes + self.c_vsrcs {
             trace!(" i[{:2}] = {}", i_res, n[i_res]);
         }
 
         n
-
     }
 
-    fn index_of_next_abs( &self, m: &[Vec<f64>], k: usize ) -> usize {
+    fn index_of_next_abs(&self, m: &[Vec<f64>], k: usize) -> usize {
         let mut biggest: f64 = 0.0;
         let mut r_biggest: usize = k;
         let c_rows = m.len();
@@ -675,17 +652,16 @@ impl Engine {
 
     // mean squared error of the two vectors
     fn mean_squared_error(&self, v1: &[f64], v2: &[f64]) -> f64 {
-        let mut mse :f64 = 0.0;
+        let mut mse: f64 = 0.0;
         let bits = v1.iter().zip(v2.iter());
-        for (x,y) in bits {
-            mse += ( x - y ).powi(2);
+        for (x, y) in bits {
+            mse += (x - y).powi(2);
         }
         mse /= v1.len() as f64;
         mse
     }
 
-
-    fn pp_matrix(&self, m : &[Vec<f64>] ) {
+    fn pp_matrix(&self, m: &[Vec<f64>]) {
         for r in m {
             for val in r {
                 print!("{:.3}   ", val);
@@ -694,10 +670,11 @@ impl Engine {
         }
     }
 
-
-    fn stamp_current_source(&self, m: &mut [Vec<f64>], isrc: &circuit::CurrentSource) {
-        trace!("  [STAMP] Current source: {}A into node {} and out of node {}",
-                isrc.value, isrc.p, isrc.n);
+    fn stamp_current_source(&self, m: &mut [Vec<f64>], isrc: &element::CurrentSource) {
+        trace!(
+            "  [STAMP] Current source: {}A into node {} and out of node {}",
+            isrc.value, isrc.p, isrc.n
+        );
         let ia = self.c_nodes + self.c_vsrcs; // index for ampere vector
         if isrc.p != 0 {
             m[isrc.p][ia] -= isrc.value;
@@ -707,15 +684,12 @@ impl Engine {
         }
     }
 
-
     #[allow(unused_parens)]
-    fn stamp_voltage_source(
-        &self,
-        m: &mut [Vec<f64>],
-        vsrc: &circuit::VoltageSource,
-    ) {
-        trace!("  [STAMP] Voltage source: {}V from node {} to node {}",
-                vsrc.value, vsrc.p, vsrc.n);
+    fn stamp_voltage_source(&self, m: &mut [Vec<f64>], vsrc: &element::VoltageSource) {
+        trace!(
+            "  [STAMP] Voltage source: {}V from node {} to node {}",
+            vsrc.value, vsrc.p, vsrc.n
+        );
         let idx_vsrc = self.c_nodes + vsrc.idx; // index in ampere vector
 
         // put the voltage value in the 'known' vector
@@ -736,11 +710,11 @@ impl Engine {
         }
     }
 
-
-
-    fn stamp_resistor(&self, m: &mut [Vec<f64>], r: &circuit::Resistor) {
-        trace!("  [STAMP] Resistor {} Ohms between node {} and node {}",
-                r.value, r.a, r.b);
+    fn stamp_resistor(&self, m: &mut [Vec<f64>], r: &element::Resistor) {
+        trace!(
+            "  [STAMP] Resistor {} Ohms between node {} and node {}",
+            r.value, r.a, r.b
+        );
         let over = 1.0 / r.value;
 
         // out of node 'a'
@@ -760,55 +734,56 @@ impl Engine {
         }
     }
 
-
     fn storage_stamp(&self, m: &mut [Vec<f64>], n: &[f64], t: f64) {
-
         if !&self.storage_elements.is_empty() {
             trace!("  [STAMP] storage elements");
         }
 
         for el in &self.storage_elements {
             match *el {
-                circuit::Element::C(ref c) => {
-
+                element::Element::C(ref c) => {
                     // linearize
                     let v_c = n[c.a] - n[c.b];
                     let (g_eq, i_eq) = c.linearize(v_c, t);
 
                     // stamp
-                    self.stamp_current_source(m, &circuit::CurrentSource{
-                        p: c.b,
-                        n: c.a,
-                        value: i_eq
-                    });
-                    self.stamp_resistor(m, &circuit::Resistor{
-                        ident: "asdfa".to_string(),
-                        a: c.a,
-                        b: c.b,
-                        value: 1.0/g_eq
-                    });
-
-                },
-                _ => { println!("*ERROR* - unrecognised storage element"); }
+                    self.stamp_current_source(
+                        m,
+                        &element::CurrentSource {
+                            p: c.b,
+                            n: c.a,
+                            value: i_eq,
+                        },
+                    );
+                    self.stamp_resistor(
+                        m,
+                        &element::Resistor {
+                            ident: "asdfa".to_string(),
+                            a: c.a,
+                            b: c.b,
+                            value: 1.0 / g_eq,
+                        },
+                    );
+                }
+                _ => {
+                    println!("*ERROR* - unrecognised storage element");
+                }
             }
         }
         //println!("*INFO* Energy storage stamped matrix");
         //self.pp_matrix(&m);
     }
 
-
     // stamp a matrix with linearized companion models of all the nonlinear
     // devices listed in the SPICE netlist
-    fn nonlinear_stamp(&self, m: &mut [Vec<f64>], n: &[f64], n_prev: &[f64] ) {
-
+    fn nonlinear_stamp(&self, m: &mut [Vec<f64>], n: &[f64], n_prev: &[f64]) {
         if !&self.nonlinear_elements.is_empty() {
             trace!("  [STAMP] nonlinear elements");
         }
 
         for el in &self.nonlinear_elements {
             match *el {
-                circuit::Element::D(ref d) => {
-
+                element::Element::D(ref d) => {
                     // linearize
                     let v_d = n[d.p] - n[d.n];
                     let v_d_prev = n_prev[d.p] - n_prev[d.n];
@@ -817,20 +792,28 @@ impl Engine {
                     trace!(" [STAMP] {} {} {:?}", el, v_d, (g_eq, i_eq));
 
                     // stamp
-                    self.stamp_current_source(m, &circuit::CurrentSource{
-                        p: d.p,
-                        n: d.n,
-                        value: i_eq
-                    });
-                    self.stamp_resistor(m, &circuit::Resistor{
-                        ident: "nl_something".to_string(),
-                        a: d.p,
-                        b: d.n,
-                        value: 1.0/g_eq
-                    });
+                    self.stamp_current_source(
+                        m,
+                        &element::CurrentSource {
+                            p: d.p,
+                            n: d.n,
+                            value: i_eq,
+                        },
+                    );
+                    self.stamp_resistor(
+                        m,
+                        &element::Resistor {
+                            ident: "nl_something".to_string(),
+                            a: d.p,
+                            b: d.n,
+                            value: 1.0 / g_eq,
+                        },
+                    );
                 }
 
-                _ => { println!("*ERROR* - unrecognised nonlinear element"); }
+                _ => {
+                    println!("*ERROR* - unrecognised nonlinear element");
+                }
             }
         }
         //println!("*INFO* Non-linear stamped matrix");
@@ -838,31 +821,41 @@ impl Engine {
     }
 
     fn v_dependent_source_stamp(&self, m: &mut [Vec<f64>]) {
-
         if !&self.v_dependent_sources.is_empty() {
             trace!("  [STAMP] voltage-dependent sources");
         }
 
         for el in &self.v_dependent_sources {
             match *el {
-
-                circuit::Element::Vcvs(ref src) => {
+                element::Element::Vcvs(ref src) => {
                     let idx = self.c_nodes + src.idx; // index in ampere vector
                     trace!(" [STAMP] VCVS (idx:{} ({}))", src.idx, idx);
 
                     // branch current of output source
-                    if src.p != 0 { m[src.p][idx] += 1.0 }
-                    if src.n != 0 { m[src.n][idx] -= 1.0 }
+                    if src.p != 0 {
+                        m[src.p][idx] += 1.0
+                    }
+                    if src.n != 0 {
+                        m[src.n][idx] -= 1.0
+                    }
 
                     // make sure controls and outputs are related
-                    if src.cp != 0 { m[idx][src.cp] += src.k }
-                    if src.cn != 0 { m[idx][src.cn] -= src.k }
+                    if src.cp != 0 {
+                        m[idx][src.cp] += src.k
+                    }
+                    if src.cn != 0 {
+                        m[idx][src.cn] -= src.k
+                    }
 
-                    if src.p != 0 { m[idx][src.p] -= 1.0 }
-                    if src.n != 0 { m[idx][src.n] += 1.0 }
+                    if src.p != 0 {
+                        m[idx][src.p] -= 1.0
+                    }
+                    if src.n != 0 {
+                        m[idx][src.n] += 1.0
+                    }
                 }
 
-                circuit::Element::Vccs(ref src) => {
+                element::Element::Vccs(ref src) => {
                     // Reminder to self:
                     // +ve currents flow into a node
                     // -ve currents flow out of a node
@@ -871,83 +864,101 @@ impl Engine {
                     // (in thru p, out thru n)
                     trace!(" [STAMP] VCCS");
                     if src.p != 0 {
-                        if src.cp != 0 { m[src.p][src.cp] += src.k }
-                        if src.cn != 0 { m[src.p][src.cn] -= src.k }
+                        if src.cp != 0 {
+                            m[src.p][src.cp] += src.k
+                        }
+                        if src.cn != 0 {
+                            m[src.p][src.cn] -= src.k
+                        }
                     }
                     if src.n != 0 {
-                        if src.cp != 0 { m[src.n][src.cp] -= src.k }
-                        if src.cn != 0 { m[src.n][src.cn] += src.k }
+                        if src.cp != 0 {
+                            m[src.n][src.cp] -= src.k
+                        }
+                        if src.cn != 0 {
+                            m[src.n][src.cn] += src.k
+                        }
                     }
                 }
 
-                _ => { println!("*ERROR* - unrecognised voltage-dependent source"); }
+                _ => {
+                    println!("*ERROR* - unrecognised voltage-dependent source");
+                }
             }
         }
         //println!("*INFO* Non-linear stamped matrix");
         //self.pp_matrix(&m);
     }
 
-
     // stamp independent sources
     fn independent_source_stamp(&self, m: &mut [Vec<f64>], t_now: f64) {
-
         if !&self.independent_sources.is_empty() {
             trace!("  [STAMP] Stamping independent source elements");
         }
 
         for el in &self.independent_sources {
             match *el {
-                circuit::Element::Isin(ref isrc) => {
+                element::Element::Isin(ref isrc) => {
                     trace!(" [STAMP] {}", el);
 
                     // evaluate at the present sim time
                     let i_now = isrc.evaluate(t_now);
 
                     // stamp
-                    self.stamp_current_source(m, &circuit::CurrentSource{
-                        p: isrc.p,
-                        n: isrc.n,
-                        value: i_now,
-                    });
-                },
+                    self.stamp_current_source(
+                        m,
+                        &element::CurrentSource {
+                            p: isrc.p,
+                            n: isrc.n,
+                            value: i_now,
+                        },
+                    );
+                }
 
-                circuit::Element::Vsin(ref vsrc) => {
+                element::Element::Vsin(ref vsrc) => {
                     trace!("  [STAMP] {}", el);
 
                     // evaluate at the present sim time
                     let v_now = vsrc.evaluate(t_now);
 
                     // stamp
-                    self.stamp_voltage_source(m, &circuit::VoltageSource{
-                        p: vsrc.p,
-                        n: vsrc.n,
-                        value: v_now,
-                        idx: vsrc.idx,
-                    });
-                },
+                    self.stamp_voltage_source(
+                        m,
+                        &element::VoltageSource {
+                            p: vsrc.p,
+                            n: vsrc.n,
+                            value: v_now,
+                            idx: vsrc.idx,
+                        },
+                    );
+                }
 
-                circuit::Element::Vpwl(ref vsrc) => {
+                element::Element::Vpwl(ref vsrc) => {
                     trace!("  [STAMP] {}", el);
 
                     // evaluate at the present sim time
                     let v_now = vsrc.evaluate(t_now);
 
                     // stamp
-                    self.stamp_voltage_source(m, &circuit::VoltageSource{
-                        p: vsrc.p,
-                        n: vsrc.n,
-                        value: v_now,
-                        idx: vsrc.idx,
-                    });
-                },
+                    self.stamp_voltage_source(
+                        m,
+                        &element::VoltageSource {
+                            p: vsrc.p,
+                            n: vsrc.n,
+                            value: v_now,
+                            idx: vsrc.idx,
+                        },
+                    );
+                }
 
-                _ => { println!("*ERROR* - unrecognised independent source element"); }
+                _ => {
+                    println!("*ERROR* - unrecognised independent source element");
+                }
             }
         }
         //println!("*INFO* Independent source stamped matrix");
         //self.pp_matrix(&m);
     }
-
 
     // check for convergence by testing new and previous solutions against
     // RELTOL and the like
@@ -957,11 +968,13 @@ impl Engine {
         yv: &[f64],
         cfg: &analysis::Configuration,
     ) -> ConvergenceResult {
-
         let mut res = Ok(true);
-        for (i,x) in xv.iter().enumerate() {
+        for (i, x) in xv.iter().enumerate() {
             if !x.is_finite() {
-                println!("*ERROR* math gone bad - infinites in convergence check {}", i);
+                println!(
+                    "*ERROR* math gone bad - infinites in convergence check {}",
+                    i
+                );
                 res = Err(ConvergenceError::Divergent);
                 continue;
             }
@@ -977,9 +990,7 @@ impl Engine {
                 res = Ok(false);
             }
         }
-        trace!("  [CONVERGE] Convergence check: {:?}", res); 
+        trace!("  [CONVERGE] Convergence check: {:?}", res);
         res
     }
-
 }
-
