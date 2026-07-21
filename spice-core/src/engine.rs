@@ -5,15 +5,8 @@
 use crate::analysis;
 use crate::circuit;
 use crate::element;
+use crate::report::{Reporter, TerminalReporter};
 use crate::wavewriter::WaveWriter;
-
-fn banner() {
-    println!("**********************************************");
-    println!("***          Tiny-SPICE-Simulator          ***");
-    println!("***       (c) CrapCadCorp 2017-2023        ***");
-    println!("*** No Patents Pending, No rights reserved ***");
-    println!("**********************************************");
-}
 
 #[derive(Debug)]
 pub enum ConvergenceError {
@@ -22,14 +15,12 @@ pub enum ConvergenceError {
 
 pub type ConvergenceResult = Result<bool, ConvergenceError>;
 
-#[derive(Default)]
 #[allow(non_snake_case)]
 pub struct Engine {
     // Number of voltage nodes in the circuit
     c_nodes: usize,
 
     // Number of voltage sources in the circuit
-    // we have to solve for the current through these too
     c_vsrcs: usize,
 
     // base matrix - all the linear things
@@ -49,11 +40,15 @@ pub struct Engine {
 
     // DC operating point
     dc_op: Vec<f64>,
+
+    // Progress reporter
+    reporter: Box<dyn Reporter>,
 }
 
 impl Engine {
     pub fn new() -> Engine {
-        banner();
+        let reporter = Box::new(TerminalReporter);
+        reporter.banner();
         Engine {
             c_nodes: 0,
             c_vsrcs: 0,
@@ -63,9 +58,23 @@ impl Engine {
             v_dependent_sources: vec![],
             storage_elements: vec![],
             dc_op: vec![],
+            reporter,
         }
     }
 
+    /// Replace the default terminal reporter (e.g. with a TUI reporter).
+    pub fn set_reporter(&mut self, r: Box<dyn Reporter>) {
+        self.reporter = r;
+    }
+}
+
+impl Default for Engine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Engine {
     /// Run the selected circuit analysis
     ///
     /// This dispatches out to the different analysis routines (e.g. DC operating
@@ -115,8 +124,8 @@ impl Engine {
             self.elaborate(&ckt);
 
             // announce
-            println!("*************************************************************");
-            println!("DC Sweep: {} to {} by {}", VSTART, VSTOP, v_step);
+            self.reporter
+                .info(&format!("DC Sweep: {} to {} by {}", VSTART, VSTOP, v_step));
 
             // open waveform database
             let mut wavedb = WaveWriter::new(&cfg.wavefile).unwrap();
@@ -181,13 +190,11 @@ impl Engine {
         let mut t_now = 0.0;
 
         // announce
-        println!("*************************************************************");
-        println!("*CONFIG* TRANSIENT ANALYSIS");
-        println!(
-            "*CONFIG* TIME {} to {} by {:0.12}",
+        self.reporter.info(&format!(
+            "TRANSIENT ANALYSIS: {} to {} by {:0.12}",
             cfg.TSTART, cfg.TSTOP, cfg.TSTEP
-        );
-        println!("*************************************************************");
+        ));
+        self.reporter.begin_transient(cfg.TSTOP);
 
         // open waveform database
         let mut wavedb = WaveWriter::new(&cfg.wavefile, &ckt.node_id_lut).unwrap();
@@ -317,6 +324,7 @@ impl Engine {
 
             c_step += 1;
             t_now += t_delta;
+            self.reporter.tick_transient(t_now, cfg.TSTOP);
             if t_now > cfg.TSTOP {
                 t_now = cfg.TSTOP;
                 is_final_timestep = true;
@@ -329,7 +337,8 @@ impl Engine {
             }
         } // time
 
-        println!("*INFO* Finished at time {}", t_now);
+        self.reporter.finish_transient();
+        self.reporter.info(&format!("Finished at time {}", t_now));
         analysis::Statistics {
             kind: analysis::Kind::Transient,
             end: t_now,
@@ -593,7 +602,8 @@ impl Engine {
         //println!("[lst]  {} / {}",  v[i_last][c_mna], v[i_last][i_last] );
         if !n[i_last].is_finite() {
             println!("*WARNING* have to hack the first solve to 0.0");
-            println!(" This can happen if solving a 0V source from a node to ground");
+            self.reporter
+                .warn("This can happen if solving a 0V source from a node to ground");
             n[i_last] = 0.0;
         }
 

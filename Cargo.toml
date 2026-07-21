@@ -1,14 +1,3 @@
-[package]
-name = "tiny_spice"
-version = "0.10.0"
-edition = "2024"
-authors = ["Marty <harnesser+kartoffel@gmail.com>"]
-
-[features]
-dev = []
-
-[dependencies]
-
-[[bin]]
-name = "tiny-spice-rs"
-path = "bin/tiny-spice.rs"
+[workspace]
+resolver = "2"
+members = ["spice-core", "spice-tui", "spice-cli"]

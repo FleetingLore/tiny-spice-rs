@@ -9,7 +9,7 @@ macro_rules! spice {
     ($name:ident, $path: expr) => {
         #[test]
         fn $name() {
-            let mut cmd = Command::new("target/debug/tiny-spice-rs");
+            let mut cmd = Command::new("../target/debug/spice_cli");
             cmd.arg($path);
             let output = cmd.output().expect("failed to execute");
 

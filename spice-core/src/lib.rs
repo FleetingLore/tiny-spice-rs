@@ -5,7 +5,7 @@
 macro_rules! trace {
     ($fmt:expr $(, $($arg:tt)*)?) => {
         if cfg!(feature = "dev") {
-            println!(concat!("[{}] ", $fmt), module_path!(), $($($arg)*)?);
+            println!(concat!("trace [{}] ", $fmt), module_path!(), $($($arg)*)?);
         }
     };
 }
@@ -21,6 +21,12 @@ pub mod engine;
 
 // Device Models
 pub mod element;
+
+// Circuit source abstraction
+pub mod source;
+
+// Progress reporting
+pub mod report;
 
 // Waveform dumper
 pub mod wavewriter;

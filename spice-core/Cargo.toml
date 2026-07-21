@@ -1,0 +1,10 @@
+[package]
+name = "tiny_spice"
+version = "0.10.0"
+edition = "2024"
+authors = ["Marty <harnesser+kartoffel@gmail.com>"]
+
+[features]
+dev = []
+
+[dependencies]

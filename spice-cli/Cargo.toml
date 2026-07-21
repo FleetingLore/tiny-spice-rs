@@ -1,0 +1,8 @@
+[package]
+name = "spice_cli"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tiny_spice = { path = "../spice-core" }
+spice_tui = { path = "../spice-tui" }

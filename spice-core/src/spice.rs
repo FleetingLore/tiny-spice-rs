@@ -740,6 +740,20 @@ impl Reader {
     }
 }
 
+impl crate::source::CircuitSource for Reader {
+    fn read(&mut self, path: &Path) -> bool {
+        Reader::read(self, path)
+    }
+
+    fn get_expanded_circuit(&self) -> Circuit {
+        Reader::get_expanded_circuit(self)
+    }
+
+    fn configuration(&self) -> &Configuration {
+        Reader::configuration(self)
+    }
+}
+
 /// Extract an element identifier from SPICE
 // Just take the entire thing as an identifier
 fn extract_identifier(text: &str) -> String {

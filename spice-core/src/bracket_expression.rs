@@ -15,10 +15,10 @@ impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Expression::Literal(ref p) => {
-                write!(f, "{}", p)
+                write!(f, "[{}]", p)
             }
             Expression::Identifier(ref p) => {
-                write!(f, "Identifier({})", p)
+                write!(f, "[Identifier {}]", p)
             }
         }
     }
@@ -33,12 +33,12 @@ pub fn extract_expression(text: &str) -> Option<Expression> {
         if let Some(n) = val {
             return Some(Expression::Literal(n));
         } else {
-            println!("*ERROR* expected numerical literal in expression");
+            eprintln!("*ERROR* expected numerical literal in expression");
             return None;
         }
     }
 
-    println!("*WARN* only expressions that are a single identifier are supported");
+    eprintln!("*WARN* only expressions that are a single identifier are supported");
 
     let expr_str: Vec<_> = text.chars().collect();
 
@@ -48,7 +48,7 @@ pub fn extract_expression(text: &str) -> Option<Expression> {
     if expr_str[i] == '{' {
         i += 1
     } else {
-        println!("*ERROR* - expected '{{'");
+        eprintln!("*ERROR* - expected '{{'");
         return None;
     }
 
@@ -79,9 +79,8 @@ pub fn extract_expression(text: &str) -> Option<Expression> {
         }
     }
 
-    if expr_str[i] == '}' {
-    } else {
-        println!("*ERROR* - expected '}}'");
+    if expr_str[i] != '}' {
+        eprintln!("*ERROR* - expected '}}'");
         return None;
     }
 
